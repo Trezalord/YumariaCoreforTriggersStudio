@@ -8,7 +8,9 @@ import fr.yumaria.jobs.job.JobDefinition;
 import fr.yumaria.jobs.progress.JobProgressService;
 import fr.yumaria.jobs.util.Text;
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
@@ -18,14 +20,20 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityPickupItemEvent;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.player.PlayerAnimationEvent;
+import org.bukkit.event.player.PlayerAnimationType;
 import org.bukkit.event.player.PlayerFishEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.EventExecutor;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.lang.reflect.Field;
@@ -51,7 +59,9 @@ public final class YumariaFishingHook implements Listener {
     private final JobProgressService progressService;
     private final Map<String, Long> recentGrants = new ConcurrentHashMap<>();
     private final Map<UUID, PendingCatch> pendingCatches = new ConcurrentHashMap<>();
+    private final Map<UUID, CustomCatchWatch> customCatchWatches = new ConcurrentHashMap<>();
     private final List<String> registeredCustomEvents = new ArrayList<>();
+    private Plugin yumariaFishingPlugin;
     private boolean enabled;
     private boolean pluginPresent;
     private boolean fallbackRegistered;
@@ -81,10 +91,12 @@ public final class YumariaFishingHook implements Listener {
         pluginPresent = yumariaFishing != null && yumariaFishing.isEnabled();
         if (!pluginPresent) {
             enabled = false;
+            yumariaFishingPlugin = null;
             debug("YumariaFishing hook disabled: plugin is not enabled.");
             return;
         }
 
+        yumariaFishingPlugin = yumariaFishing;
         enabled = true;
         Bukkit.getPluginManager().registerEvents(this, plugin);
         fallbackRegistered = true;
@@ -99,11 +111,16 @@ public final class YumariaFishingHook implements Listener {
         registeredCustomEvents.clear();
         fallbackRegistered = false;
         enabled = false;
+        yumariaFishingPlugin = null;
         recentGrants.clear();
         for (PendingCatch pendingCatch : pendingCatches.values()) {
             pendingCatch.cancel();
         }
         pendingCatches.clear();
+        for (CustomCatchWatch watch : customCatchWatches.values()) {
+            watch.cancel();
+        }
+        customCatchWatches.clear();
     }
 
     public boolean isEnabled() {
@@ -118,7 +135,9 @@ public final class YumariaFishingHook implements Listener {
         return "enabled=" + enabled
                 + ", pluginPresent=" + pluginPresent
                 + ", fallbackRegistered=" + fallbackRegistered
-                + ", customEvents=" + (registeredCustomEvents.isEmpty() ? "-" : String.join(",", registeredCustomEvents));
+                + ", customEvents=" + (registeredCustomEvents.isEmpty() ? "-" : String.join(",", registeredCustomEvents))
+                + ", activeWatches=" + customCatchWatches.size()
+                + ", progressMode=" + progressMode();
     }
 
     @org.bukkit.event.EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = false)
@@ -134,6 +153,7 @@ public final class YumariaFishingHook implements Listener {
             debug("PlayerFishEvent ignored: state=FISHING reason=rod_cast_no_confirmed_catch");
             return;
         }
+        maybeStartCustomGameWatch(event.getPlayer(), "PlayerFishEvent:" + event.getState());
         if (event.getState() != PlayerFishEvent.State.CAUGHT_FISH) {
             debug("PlayerFishEvent ignored: state=" + event.getState() + " reason=not_confirmed_caught_fish");
             return;
@@ -159,6 +179,33 @@ public final class YumariaFishingHook implements Listener {
         }
 
         startPendingCatch(event.getPlayer(), event.getCaught());
+    }
+
+    @org.bukkit.event.EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = false)
+    public void onPlayerInteract(PlayerInteractEvent event) {
+        if (!enabled || event.getHand() != EquipmentSlot.HAND || !isFishingRod(event.getPlayer().getInventory().getItemInMainHand())) {
+            return;
+        }
+        if (event.getAction() == Action.LEFT_CLICK_AIR
+                || event.getAction() == Action.LEFT_CLICK_BLOCK
+                || event.getAction() == Action.RIGHT_CLICK_AIR
+                || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+            maybeStartCustomGameWatch(event.getPlayer(), "PlayerInteractEvent:" + event.getAction());
+        }
+    }
+
+    @org.bukkit.event.EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = false)
+    public void onPlayerAnimation(PlayerAnimationEvent event) {
+        if (!enabled || event.getAnimationType() != PlayerAnimationType.ARM_SWING || !isFishingRod(event.getPlayer().getInventory().getItemInMainHand())) {
+            return;
+        }
+        maybeStartCustomGameWatch(event.getPlayer(), "PlayerAnimationEvent:ARM_SWING");
+    }
+
+    @org.bukkit.event.EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = false)
+    public void onQuit(PlayerQuitEvent event) {
+        finishPendingCatch(event.getPlayer().getUniqueId(), "player quit");
+        finishCustomCatchWatch(event.getPlayer().getUniqueId(), "player quit");
     }
 
     @org.bukkit.event.EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = false)
@@ -263,6 +310,10 @@ public final class YumariaFishingHook implements Listener {
 
     private Optional<FishContext> contextFromItem(ItemStack itemStack) {
         return inspectItem(itemStack).context();
+    }
+
+    private boolean isFishingRod(ItemStack itemStack) {
+        return itemStack != null && itemStack.getType() == Material.FISHING_ROD;
     }
 
     private void startPendingCatch(Player player, Entity caughtEntity) {
@@ -381,6 +432,110 @@ public final class YumariaFishingHook implements Listener {
         debug("Pending confirmed catch finished: uuid=" + uuid + ", reason=" + reason);
     }
 
+    private void maybeStartCustomGameWatch(Player player, String source) {
+        if (!plugin.getConfig().getBoolean("integrations.yumaria-fishing.catch-watch.enabled", true)) {
+            return;
+        }
+
+        YumariaFishingState state = yumariaFishingState(player);
+        if (!state.active() && !state.hookPending()) {
+            debug("Custom catch watch not started: player=" + player.getName()
+                    + ", source=" + source
+                    + ", active=false, hookPending=false"
+                    + (state.available() ? "" : ", runtime unavailable"));
+            return;
+        }
+
+        UUID uuid = player.getUniqueId();
+        CustomCatchWatch existing = customCatchWatches.get(uuid);
+        if (existing != null) {
+            currentGameSnapshot(player).ifPresent(existing::setLastSnapshot);
+            return;
+        }
+
+        long scanIntervalTicks = Math.max(1L, plugin.getConfig().getLong("integrations.yumaria-fishing.catch-watch.scan-interval-ticks", 2L));
+        long maxDurationTicks = Math.max(scanIntervalTicks, plugin.getConfig().getLong("integrations.yumaria-fishing.catch-watch.max-duration-ticks", 2400L));
+        long graceTicks = Math.max(scanIntervalTicks, plugin.getConfig().getLong("integrations.yumaria-fishing.catch-watch.grace-after-inactive-ticks", 20L));
+        CustomCatchWatch watch = new CustomCatchWatch(
+                uuid,
+                matchingInventoryCounts(player),
+                source,
+                scanIntervalTicks,
+                maxDurationTicks,
+                graceTicks
+        );
+        currentGameSnapshot(player).ifPresent(watch::setLastSnapshot);
+        customCatchWatches.put(uuid, watch);
+        BukkitTask task = Bukkit.getScheduler().runTaskTimer(plugin, () -> scanCustomCatchWatch(player), scanIntervalTicks, scanIntervalTicks);
+        watch.setTask(task);
+        debug("Custom catch watch started: player=" + player.getName()
+                + ", source=" + source
+                + ", active=" + state.active()
+                + ", hookPending=" + state.hookPending()
+                + ", scanIntervalTicks=" + scanIntervalTicks
+                + ", maxDurationTicks=" + maxDurationTicks
+                + ", graceAfterInactiveTicks=" + graceTicks
+                + ", beforeMatchingFish=" + watch.beforeCounts());
+    }
+
+    private void scanCustomCatchWatch(Player player) {
+        UUID uuid = player.getUniqueId();
+        CustomCatchWatch watch = customCatchWatches.get(uuid);
+        if (watch == null) {
+            return;
+        }
+        if (!player.isOnline()) {
+            finishCustomCatchWatch(uuid, "player offline");
+            return;
+        }
+
+        watch.addElapsedTicks();
+        YumariaFishingState state = yumariaFishingState(player);
+        currentGameSnapshot(player).ifPresent(watch::setLastSnapshot);
+        if (watch.elapsedTicks() >= watch.maxDurationTicks()) {
+            finishCustomCatchWatch(uuid, "max duration elapsed");
+            return;
+        }
+
+        Optional<FishContext> inventoryContext = newInventoryFishContext(player, watch.beforeCounts());
+        if (inventoryContext.isPresent()) {
+            FishContext context = inventoryContext.get().withGameSnapshot(watch.lastSnapshot());
+            debug("[YumariaJobs] confirmed custom fish catch: player=" + player.getName()
+                    + ", source=custom_game_watch"
+                    + ", active=" + state.active()
+                    + ", hookPending=" + state.hookPending()
+                    + ", species=" + context.speciesId()
+                    + ", rarity=" + context.rarity()
+                    + ", quality=" + context.quality()
+                    + ", castQuality=" + context.castQuality()
+                    + ", catchPerformance=" + context.catchPerformance()
+                    + ", perfectCatch=" + context.perfectCatch());
+            if (grantProgress(player, context, "confirmed_catch:yumaria_fishing_game_inventory_watch")) {
+                finishCustomCatchWatch(uuid, "inventory fish grant");
+            }
+            return;
+        }
+
+        if (state.active() || state.hookPending()) {
+            watch.resetInactiveTicks();
+            return;
+        }
+
+        watch.addInactiveTicks();
+        if (watch.inactiveTicks() >= watch.graceAfterInactiveTicks()) {
+            finishCustomCatchWatch(uuid, "inactive grace elapsed without fish item");
+        }
+    }
+
+    private void finishCustomCatchWatch(UUID uuid, String reason) {
+        CustomCatchWatch watch = customCatchWatches.remove(uuid);
+        if (watch == null) {
+            return;
+        }
+        watch.cancel();
+        debug("Custom catch watch finished: uuid=" + uuid + ", reason=" + reason);
+    }
+
     private DetectionReport inspectItem(ItemStack itemStack) {
         if (itemStack == null || itemStack.getType().isAir() || !itemStack.hasItemMeta()) {
             return DetectionReport.empty(itemStack == null || itemStack.getType().isAir() ? "empty item" : "no item meta");
@@ -453,7 +608,10 @@ public final class YumariaFishingHook implements Listener {
                 FishContext.readString(container, "category", "fish_category"),
                 FishContext.readDouble(container, "sizeCm", "size_cm", "size"),
                 FishContext.readDouble(container, "weightKg", "weight_kg", "weight"),
-                FishContext.readDouble(container, "baseValue", "base_value", "base", "value")
+                FishContext.readDouble(container, "baseValue", "base_value", "base", "value"),
+                "",
+                null,
+                null
         );
     }
 
@@ -716,6 +874,7 @@ public final class YumariaFishingHook implements Listener {
         context.putInto(progressContext);
         progressContext.put("integration", "yumaria_fishing");
         progressContext.put("detection_source", detectionSource);
+        progressContext.put("progress_mode", progressMode());
         debug("[YumariaJobs] granting fisherman progress: player=" + player.getName()
                 + ", jobId=" + configuredJobId
                 + ", amount=" + amount
@@ -754,6 +913,17 @@ public final class YumariaFishingHook implements Listener {
     }
 
     private double calculateProgress(FishContext context) {
+        if (isMasteryProgressMode()) {
+            Double masteryProgress = calculateMasteryProgress(context);
+            if (masteryProgress != null) {
+                return masteryProgress;
+            }
+            debug("YumariaFishing mastery progress unavailable; falling back to configured rarity/quality progress.");
+        }
+        return calculateConfiguredProgress(context);
+    }
+
+    private double calculateConfiguredProgress(FishContext context) {
         double defaultProgress = plugin.getConfig().getDouble("integrations.yumaria-fishing.progress.default", 1.0D);
         String rarity = normalizeFactor(context.rarity());
         String quality = normalizeFactor(context.quality());
@@ -764,6 +934,72 @@ public final class YumariaFishingHook implements Listener {
                 ? 1.0D
                 : plugin.getConfig().getDouble("integrations.yumaria-fishing.progress.by-quality." + quality, 1.0D);
         return Math.max(0.0D, rarityBase * qualityMultiplier);
+    }
+
+    private Double calculateMasteryProgress(FishContext context) {
+        Plugin fishingPlugin = yumariaFishingPlugin();
+        if (!(fishingPlugin instanceof JavaPlugin javaPlugin)) {
+            return null;
+        }
+
+        FileConfiguration config = javaPlugin.getConfig();
+        double xp = Math.max(0.0D, config.getDouble("mastery.xp.base", 8.0D));
+        xp *= configMultiplier(config, "mastery.xp.rarity-multiplier", context.rarity(), 1.0D);
+        xp *= configMultiplier(config, "mastery.xp.quality-multiplier", context.quality(), 1.0D);
+        xp *= configMultiplier(config, "mastery.xp.category-multiplier", context.category(), 1.0D);
+        xp *= configMultiplier(config, "mastery.xp.cast-quality-multiplier", firstNonBlank(context.castQuality(), "NORMAL"), 1.0D);
+
+        if (config.getBoolean("mastery.xp.performance.enabled", true)) {
+            double performance = context.catchPerformance() == null
+                    ? plugin.getConfig().getDouble("integrations.yumaria-fishing.progress.mastery-default-performance", 1.0D)
+                    : context.catchPerformance();
+            double minMultiplier = config.getDouble("mastery.xp.performance.min-multiplier", 0.85D);
+            double maxMultiplier = Math.max(minMultiplier, config.getDouble("mastery.xp.performance.max-multiplier", 1.20D));
+            xp *= minMultiplier + clamp(performance, 0.0D, 1.0D) * (maxMultiplier - minMultiplier);
+        }
+
+        if (Boolean.TRUE.equals(context.perfectCatch())) {
+            xp *= Math.max(0.0D, config.getDouble("mastery.xp.perfect-catch-multiplier", 1.25D));
+        }
+
+        double min = Math.max(0.0D, config.getDouble("mastery.xp.min", 1.0D));
+        double max = Math.max(min, config.getDouble("mastery.xp.max", 250.0D));
+        double rawXp = round(clamp(xp, min, max), 2);
+        double scale = Math.max(0.0D, plugin.getConfig().getDouble("integrations.yumaria-fishing.progress.mastery-xp-scale", 0.125D));
+        double progress = round(rawXp * scale, 2);
+        debug("YumariaFishing mastery progress calculated: species=" + context.speciesId()
+                + ", rarity=" + context.rarity()
+                + ", quality=" + context.quality()
+                + ", category=" + context.category()
+                + ", castQuality=" + firstNonBlank(context.castQuality(), "NORMAL")
+                + ", catchPerformance=" + context.catchPerformance()
+                + ", perfectCatch=" + context.perfectCatch()
+                + ", rawMasteryXp=" + rawXp
+                + ", scale=" + scale
+                + ", progress=" + progress);
+        return progress;
+    }
+
+    private double configMultiplier(FileConfiguration config, String path, String key, double fallback) {
+        String normalized = key == null ? "" : key.trim();
+        if (normalized.isBlank()) {
+            return fallback;
+        }
+        String upper = normalized.toUpperCase(Locale.ROOT);
+        String lower = normalized.toLowerCase(Locale.ROOT);
+        return Math.max(0.0D, config.getDouble(path + "." + upper, config.getDouble(path + "." + lower, fallback)));
+    }
+
+    private boolean isMasteryProgressMode() {
+        String mode = Text.normalizeLookup(progressMode());
+        return mode.equals("mastery")
+                || mode.equals("yumariafishingmastery")
+                || mode.equals("yumariafishingxp")
+                || mode.equals("fishingmastery");
+    }
+
+    private String progressMode() {
+        return plugin.getConfig().getString("integrations.yumaria-fishing.progress.mode", "yumaria-fishing-mastery");
     }
 
     private String normalizeFactor(String value) {
@@ -777,6 +1013,258 @@ public final class YumariaFishingHook implements Listener {
     private void debug(String message) {
         if (plugin.getConfig().getBoolean("integrations.yumaria-fishing.debug", false)) {
             plugin.getLogger().info("[YumariaFishingHook] " + message);
+        }
+    }
+
+    private Plugin yumariaFishingPlugin() {
+        if (yumariaFishingPlugin != null && yumariaFishingPlugin.isEnabled()) {
+            return yumariaFishingPlugin;
+        }
+        Plugin current = Bukkit.getPluginManager().getPlugin("YumariaFishing");
+        if (current != null && current.isEnabled()) {
+            yumariaFishingPlugin = current;
+        }
+        return yumariaFishingPlugin;
+    }
+
+    private YumariaFishingState yumariaFishingState(Player player) {
+        Object manager = yumariaFishingGameManager();
+        if (manager == null) {
+            return YumariaFishingState.unavailable();
+        }
+        return new YumariaFishingState(
+                true,
+                invokeBoolean(manager, "isActive", player),
+                invokeBoolean(manager, "isHookPending", player)
+        );
+    }
+
+    private Object yumariaFishingGameManager() {
+        Plugin fishingPlugin = yumariaFishingPlugin();
+        if (fishingPlugin == null) {
+            return null;
+        }
+        return invokeNoArg(fishingPlugin, "getFishingGameManager");
+    }
+
+    private Optional<GameSnapshot> currentGameSnapshot(Player player) {
+        Object manager = yumariaFishingGameManager();
+        if (manager == null) {
+            return Optional.empty();
+        }
+        Object activeGames = readField(manager, "activeGames");
+        if (!(activeGames instanceof Map<?, ?> games)) {
+            return Optional.empty();
+        }
+        Object game = games.get(player.getUniqueId());
+        if (game == null) {
+            return Optional.empty();
+        }
+
+        Object species = readField(game, "species");
+        int insideTicks = intValue(readField(game, "insideTicks"));
+        int totalTicks = intValue(readField(game, "totalTicks"));
+        double performance = totalTicks <= 0 ? 0.0D : clamp(insideTicks / (double) totalTicks, 0.0D, 1.0D);
+        GameSnapshot snapshot = new GameSnapshot(
+                stringValue(firstReflectionValue(species, "id", "getId", "speciesId", "getSpeciesId")),
+                stringValue(firstReflectionValue(species, "rarity", "getRarity")),
+                stringValue(firstReflectionValue(species, "category", "getCategory")),
+                stringValue(readField(game, "castQuality")),
+                performance,
+                totalTicks > 0 && insideTicks == totalTicks,
+                insideTicks,
+                totalTicks
+        );
+        debug("Captured YumariaFishing game snapshot: player=" + player.getName()
+                + ", species=" + snapshot.speciesId()
+                + ", rarity=" + snapshot.rarity()
+                + ", category=" + snapshot.category()
+                + ", castQuality=" + snapshot.castQuality()
+                + ", performance=" + snapshot.catchPerformance()
+                + ", perfectCatch=" + snapshot.perfectCatch()
+                + ", insideTicks=" + insideTicks
+                + ", totalTicks=" + totalTicks);
+        return Optional.of(snapshot);
+    }
+
+    private Object firstReflectionValue(Object target, String... names) {
+        if (target == null) {
+            return null;
+        }
+        for (String name : names) {
+            Object value = invokeNoArg(target, name);
+            if (value != null) {
+                return value;
+            }
+            value = readField(target, name);
+            if (value != null) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    private boolean invokeBoolean(Object target, String methodName, Player player) {
+        if (target == null) {
+            return false;
+        }
+        try {
+            Method method = target.getClass().getMethod(methodName, Player.class);
+            method.setAccessible(true);
+            Object value = method.invoke(target, player);
+            return value instanceof Boolean result && result;
+        } catch (ReflectiveOperationException | RuntimeException exception) {
+            debug("YumariaFishing runtime state lookup failed: method=" + methodName + ", error=" + exception.getMessage());
+            return false;
+        }
+    }
+
+    private Object invokeNoArg(Object target, String methodName) {
+        if (target == null) {
+            return null;
+        }
+        try {
+            Method method = target.getClass().getMethod(methodName);
+            method.setAccessible(true);
+            return method.invoke(target);
+        } catch (ReflectiveOperationException | RuntimeException exception) {
+            return null;
+        }
+    }
+
+    private Object readField(Object target, String fieldName) {
+        if (target == null) {
+            return null;
+        }
+        Class<?> type = target.getClass();
+        while (type != null) {
+            try {
+                Field field = type.getDeclaredField(fieldName);
+                field.setAccessible(true);
+                return field.get(target);
+            } catch (ReflectiveOperationException ignored) {
+                type = type.getSuperclass();
+            }
+        }
+        return null;
+    }
+
+    private int intValue(Object value) {
+        return value instanceof Number number ? number.intValue() : 0;
+    }
+
+    private String stringValue(Object value) {
+        return value == null ? "" : String.valueOf(value);
+    }
+
+    private String firstNonBlank(String first, String fallback) {
+        return first == null || first.isBlank() ? fallback : first;
+    }
+
+    private double clamp(double value, double min, double max) {
+        return Math.max(min, Math.min(max, value));
+    }
+
+    private double round(double value, int decimals) {
+        double scale = Math.pow(10.0D, decimals);
+        return Math.round(value * scale) / scale;
+    }
+
+    private record YumariaFishingState(boolean available, boolean active, boolean hookPending) {
+        private static YumariaFishingState unavailable() {
+            return new YumariaFishingState(false, false, false);
+        }
+    }
+
+    private record GameSnapshot(
+            String speciesId,
+            String rarity,
+            String category,
+            String castQuality,
+            Double catchPerformance,
+            Boolean perfectCatch,
+            int insideTicks,
+            int totalTicks
+    ) {
+    }
+
+    private static final class CustomCatchWatch {
+        private final UUID playerId;
+        private final Map<String, Integer> beforeCounts;
+        private final String source;
+        private final long scanIntervalTicks;
+        private final long maxDurationTicks;
+        private final long graceAfterInactiveTicks;
+        private BukkitTask task;
+        private long elapsedTicks;
+        private long inactiveTicks;
+        private GameSnapshot lastSnapshot;
+
+        private CustomCatchWatch(
+                UUID playerId,
+                Map<String, Integer> beforeCounts,
+                String source,
+                long scanIntervalTicks,
+                long maxDurationTicks,
+                long graceAfterInactiveTicks
+        ) {
+            this.playerId = playerId;
+            this.beforeCounts = Map.copyOf(beforeCounts);
+            this.source = source;
+            this.scanIntervalTicks = scanIntervalTicks;
+            this.maxDurationTicks = maxDurationTicks;
+            this.graceAfterInactiveTicks = graceAfterInactiveTicks;
+        }
+
+        private Map<String, Integer> beforeCounts() {
+            return beforeCounts;
+        }
+
+        private long maxDurationTicks() {
+            return maxDurationTicks;
+        }
+
+        private long graceAfterInactiveTicks() {
+            return graceAfterInactiveTicks;
+        }
+
+        private long elapsedTicks() {
+            return elapsedTicks;
+        }
+
+        private long inactiveTicks() {
+            return inactiveTicks;
+        }
+
+        private GameSnapshot lastSnapshot() {
+            return lastSnapshot;
+        }
+
+        private void setTask(BukkitTask task) {
+            this.task = task;
+        }
+
+        private void setLastSnapshot(GameSnapshot lastSnapshot) {
+            this.lastSnapshot = lastSnapshot;
+        }
+
+        private void addElapsedTicks() {
+            elapsedTicks += scanIntervalTicks;
+        }
+
+        private void addInactiveTicks() {
+            inactiveTicks += scanIntervalTicks;
+        }
+
+        private void resetInactiveTicks() {
+            inactiveTicks = 0L;
+        }
+
+        private void cancel() {
+            if (task != null) {
+                task.cancel();
+                task = null;
+            }
         }
     }
 
@@ -826,7 +1314,10 @@ public final class YumariaFishingHook implements Listener {
             String category,
             Double sizeCm,
             Double weightKg,
-            Double baseValue
+            Double baseValue,
+            String castQuality,
+            Double catchPerformance,
+            Boolean perfectCatch
     ) {
         private void putInto(Map<String, Object> target) {
             putIfPresent(target, "species", speciesId);
@@ -837,6 +1328,27 @@ public final class YumariaFishingHook implements Listener {
             putIfPresent(target, "size_cm", sizeCm);
             putIfPresent(target, "weight_kg", weightKg);
             putIfPresent(target, "base_value", baseValue);
+            putIfPresent(target, "cast_quality", castQuality);
+            putIfPresent(target, "catch_performance", catchPerformance);
+            putIfPresent(target, "perfect_catch", perfectCatch);
+        }
+
+        private FishContext withGameSnapshot(GameSnapshot snapshot) {
+            if (snapshot == null) {
+                return this;
+            }
+            return new FishContext(
+                    firstNonBlank(speciesId, snapshot.speciesId()),
+                    firstNonBlank(rarity, snapshot.rarity()),
+                    quality,
+                    firstNonBlank(category, snapshot.category()),
+                    sizeCm,
+                    weightKg,
+                    baseValue,
+                    firstNonBlank(castQuality, snapshot.castQuality()),
+                    catchPerformance == null ? snapshot.catchPerformance() : catchPerformance,
+                    perfectCatch == null ? snapshot.perfectCatch() : perfectCatch
+            );
         }
 
         private String fingerprint() {
@@ -847,8 +1359,15 @@ public final class YumariaFishingHook implements Listener {
                     value(category),
                     value(sizeCm),
                     value(weightKg),
-                    value(baseValue)
+                    value(baseValue),
+                    value(castQuality),
+                    value(catchPerformance),
+                    value(perfectCatch)
             );
+        }
+
+        private static String firstNonBlank(String first, String fallback) {
+            return first == null || first.isBlank() ? fallback : first;
         }
 
         private static void putIfPresent(Map<String, Object> target, String key, Object value) {
@@ -967,10 +1486,13 @@ public final class YumariaFishingHook implements Listener {
                         firstNonBlank(category, context.category()),
                         sizeCm == null ? context.sizeCm() : sizeCm,
                         weightKg == null ? context.weightKg() : weightKg,
-                        baseValue == null ? context.baseValue() : baseValue
+                        baseValue == null ? context.baseValue() : baseValue,
+                        context.castQuality(),
+                        context.catchPerformance(),
+                        context.perfectCatch()
                 );
             }
-            return new FishContext(speciesId, rarity, quality, category, sizeCm, weightKg, baseValue);
+            return new FishContext(speciesId, rarity, quality, category, sizeCm, weightKg, baseValue, "", null, null);
         }
 
         private static String catchSignal(Object event) {

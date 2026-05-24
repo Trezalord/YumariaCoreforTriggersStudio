@@ -20,6 +20,11 @@ integrations:
     job-id: "pecheur"
     debug: false
     catch-detection-delay-ticks: 2
+    catch-watch:
+      enabled: true
+      scan-interval-ticks: 2
+      max-duration-ticks: 2400
+      grace-after-inactive-ticks: 20
     detection:
       pdc-namespaces:
         - "yumariafishing"
@@ -39,6 +44,11 @@ integrations:
       itemsadder-namespaces:
         - "gukuan"
     progress:
+      # yumaria-fishing-mastery mirrors YumariaFishing mastery XP, then scales it for YumariaJobs progress.
+      # Use "configured" to use only the by-rarity/by-quality table below.
+      mode: "yumaria-fishing-mastery"
+      mastery-xp-scale: 0.125
+      mastery-default-performance: 1.0
       default: 1.0
       by-rarity:
         COMMON: 1.0
@@ -48,9 +58,11 @@ integrations:
         LEGENDARY: 7.5
         MYTHIC: 12.0
       by-quality:
+        NORMAL: 1.0
         BRONZE: 1.0
         SILVER: 1.15
         GOLD: 1.35
+        IRIDIUM: 1.75
         DIAMOND: 1.75
 
 progress-bar:
