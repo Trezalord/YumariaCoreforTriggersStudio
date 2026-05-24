@@ -1,0 +1,61 @@
+main-menu:
+  title: "&8Métiers de Yumaria"
+  size: 54
+  job-slots:
+    miner: 20
+    lumberjack: 21
+    farmer: 22
+    fisherman: 23
+    hunter: 24
+  filler:
+    enabled: true
+    material: BLACK_STAINED_GLASS_PANE
+    name: " "
+  job-item:
+    name: "&d%job_name%"
+    lore:
+      - "&7%description%"
+      - ""
+      - "&8• &fNiveau: &e%level%"
+      - "&8• &fPrestige: &5%prestige%"
+      - "&8• &fRang: &b%rank%"
+      - "&8• &fÉtat: %active_status%"
+      - "&8• &fProgression: &e%progress%&7/&e%required_progress% &8(&e%percent%%&8)"
+      - "&8• &fRécompense: &a%next_money% pièces"
+      - ""
+      - "&aClic gauche: rejoindre/activer"
+      - "&eClic droit: détails"
+      - "&cShift clic droit: quitter"
+    active-status: "&aActif"
+    inactive-status: "&cInactif"
+    not-joined-status: "&7Non rejoint"
+
+detail-menu:
+  title: "&8%job_name%"
+  size: 54
+  filler:
+    enabled: true
+    material: BLACK_STAINED_GLASS_PANE
+    name: " "
+  slots:
+    info: 22
+    back: 49
+  info-item:
+    name: "&d%job_name%"
+    lore:
+      - "&7%description%"
+      - ""
+      - "&8• &fNiveau: &e%level%&7/&e%max_level%"
+      - "&8• &fPrestige: &5%prestige%"
+      - "&8• &fRang: &b%rank%"
+      - "&8• &fProgression: &e%progress%&7/&e%required_progress%"
+      - "&8• &fTotal: &e%total_progress%"
+      - ""
+      - "&fRécompense de niveau suivante:"
+      - "&8• &a%next_money% pièces"
+      - ""
+      - "&fPrestige:"
+      - "&8• &7Disponible au niveau maximum"
+  back-item:
+    material: ARROW
+    name: "&eRetour"

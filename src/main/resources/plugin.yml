@@ -1,0 +1,50 @@
+name: YumariaJobs
+version: ${version}
+main: fr.yumaria.jobs.YumariaJobsPlugin
+api-version: '1.21'
+authors:
+  - Yumaria
+description: Custom job progression system for the Yumaria MMORPG server.
+softdepend:
+  - Vault
+  - PlaceholderAPI
+  - ItemsAdder
+  - Citizens
+  - YumariaFishing
+commands:
+  jobs:
+    description: Ouvre le menu des métiers.
+    usage: /jobs
+    permission: yumariajobs.use
+  prestige:
+    description: Prestige un métier au niveau maximum.
+    usage: /prestige <job>
+    permission: yumariajobs.prestige
+  yjobs:
+    description: Administration de YumariaJobs.
+    usage: /yjobs reload
+    aliases:
+      - yumariajobs
+    permission: yumariajobs.admin
+permissions:
+  yumariajobs.use:
+    description: Autorise l'utilisation de /jobs.
+    default: true
+  yumariajobs.join:
+    description: Autorise à rejoindre un métier.
+    default: true
+  yumariajobs.leave:
+    description: Autorise à quitter un métier.
+    default: true
+  yumariajobs.stats:
+    description: Autorise à voir les statistiques de métier.
+    default: true
+  yumariajobs.top:
+    description: Autorise à voir les classements.
+    default: true
+  yumariajobs.prestige:
+    description: Autorise à utiliser le prestige.
+    default: true
+  yumariajobs.admin:
+    description: Autorise l'administration de YumariaJobs.
+    default: op

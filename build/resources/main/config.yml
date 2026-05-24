@@ -1,0 +1,129 @@
+language: fr
+debug:
+  enabled: false
+  progress: false
+  listeners: false
+  bossbar: false
+  jobs: false
+
+allow-multiple-active-jobs: true
+max-active-jobs: 2
+save-interval-seconds: 300
+
+progress:
+  auto-join-on-progress: false
+  save-delay-ticks: 40
+
+integrations:
+  yumaria-fishing:
+    enabled: true
+    job-id: "pecheur"
+    debug: false
+    catch-detection-delay-ticks: 2
+    detection:
+      pdc-namespaces:
+        - "yumariafishing"
+        - "yumaria_fishing"
+        - "yumaria"
+        - "yfish"
+        - "gukuan"
+      pdc-key-contains:
+        - "species"
+        - "fish"
+        - "rarity"
+        - "quality"
+        - "size"
+        - "weight"
+        - "base"
+        - "category"
+      itemsadder-namespaces:
+        - "gukuan"
+    progress:
+      default: 1.0
+      by-rarity:
+        COMMON: 1.0
+        UNCOMMON: 1.5
+        RARE: 2.5
+        EPIC: 4.0
+        LEGENDARY: 7.5
+        MYTHIC: 12.0
+      by-quality:
+        BRONZE: 1.0
+        SILVER: 1.15
+        GOLD: 1.35
+        DIAMOND: 1.75
+
+progress-bar:
+  enabled: true
+  display-duration-seconds: 8
+  color: PURPLE
+  style: SEGMENTED_20
+  use-actionbar-fallback: false
+  title: "&d✦ %job_name% &8| %prestige_display%%rank% &8| &fNiv. %level% &8| &e%percent%%"
+  prestige-display: "&5P%prestige% &8| "
+  no-prestige-display: ""
+
+  text-progress-bar:
+    enabled: true
+    length: 14
+    filled-symbol: "■"
+    empty-symbol: "■"
+    filled-color: "&d"
+    empty-color: "&8"
+
+  subtitle:
+    enabled: true
+    format: "%text_progress_bar%"
+
+ranks:
+  - min-level: 100
+    name: "Légende"
+  - min-level: 90
+    name: "Grand Maître"
+  - min-level: 80
+    name: "Maître"
+  - min-level: 70
+    name: "Expert"
+  - min-level: 60
+    name: "Spécialiste"
+  - min-level: 50
+    name: "Confirmé"
+  - min-level: 40
+    name: "Qualifié"
+  - min-level: 30
+    name: "Habitué"
+  - min-level: 20
+    name: "Ouvrier"
+  - min-level: 10
+    name: "Apprenti avancé"
+  - min-level: 1
+    name: "Apprenti"
+
+prestige:
+  enabled: true
+  max-prestige: 10
+  require-max-level: true
+  reset-level-to: 1
+  reset-progress: true
+  rewards:
+    money: "1000 * %prestige%"
+    commands:
+      - "lp user %player% permission set yumaria.jobs.%job_id%.prestige.%prestige%"
+  progress-multiplier-per-prestige: 1.10
+
+hooks:
+  vault:
+    enabled: true
+  placeholderapi:
+    enabled: true
+  itemsadder:
+    enabled: true
+  citizens:
+    enabled: true
+  native-listeners:
+    enabled: true
+    miner-block-break: true
+    lumberjack-log-break: true
+    farmer-crop-harvest: true
+    fisherman-fish-catch: true
+    hunter-mob-kill: true

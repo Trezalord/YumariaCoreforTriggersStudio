@@ -1,0 +1,163 @@
+jobs:
+  miner:
+    enabled: true
+    display-name: "Mineur"
+    description:
+      - "Mine et récupère des ressources souterraines."
+      - "Casser des minerais et de la pierre permet de progresser."
+    icon:
+      material: IRON_PICKAXE
+      itemsadder-id: ""
+    max-level: 100
+    required-progress: "6 * (%level% ^ 2)"
+    points-rewarded: "1 * %level%"
+    allow-progress-when-inactive: false
+    actions:
+      vanilla_block_break:
+        enabled: true
+        progress: 1.0
+        cooldown-ms: 0
+    rewards:
+      default:
+        money: "4 * %level%"
+        commands:
+          - "eco give %player% %money%"
+      levels:
+        10:
+          commands:
+            - "lp user %player% permission set yumaria.jobs.miner.10"
+        20:
+          commands:
+            - "lp user %player% permission set yumaria.jobs.miner.20"
+
+  lumberjack:
+    enabled: true
+    display-name: "Bûcheron"
+    description:
+      - "Coupe les arbres et entretient les forêts."
+      - "Casser des bûches permet de progresser."
+    icon:
+      material: IRON_AXE
+      itemsadder-id: ""
+    max-level: 100
+    required-progress: "6 * (%level% ^ 2)"
+    points-rewarded: "1 * %level%"
+    allow-progress-when-inactive: false
+    actions:
+      vanilla_log_break:
+        enabled: true
+        progress: 1.0
+        cooldown-ms: 0
+    rewards:
+      default:
+        money: "4 * %level%"
+        commands:
+          - "eco give %player% %money%"
+      levels:
+        10:
+          commands:
+            - "lp user %player% permission set yumaria.jobs.lumberjack.10"
+        20:
+          commands:
+            - "lp user %player% permission set yumaria.jobs.lumberjack.20"
+
+  farmer:
+    enabled: true
+    display-name: "Fermier"
+    description:
+      - "Récolte les cultures et nourrit Yumaria."
+      - "Les récoltes mûres donnent de l'expérience de métier."
+    icon:
+      material: WHEAT
+      itemsadder-id: ""
+    max-level: 100
+    required-progress: "6 * (%level% ^ 2)"
+    points-rewarded: "1 * %level%"
+    allow-progress-when-inactive: false
+    actions:
+      vanilla_crop_harvest:
+        enabled: true
+        progress: 1.0
+        cooldown-ms: 0
+      yumaria_crop_harvest:
+        enabled: true
+        progress: 1.0
+        cooldown-ms: 0
+    rewards:
+      default:
+        money: "4 * %level%"
+        commands:
+          - "eco give %player% %money%"
+      levels:
+        10:
+          commands:
+            - "lp user %player% permission set yumaria.jobs.farmer.10"
+        20:
+          commands:
+            - "lp user %player% permission set yumaria.jobs.farmer.20"
+
+  fisherman:
+    enabled: true
+    display-name: "Pêcheur"
+    description:
+      - "Pêche et récupère des ressources marines."
+      - "Attraper des poissons permet de progresser."
+    icon:
+      material: COD
+      itemsadder-id: ""
+    max-level: 100
+    required-progress: "6 * (%level% ^ 2)"
+    points-rewarded: "1 * %level%"
+    allow-progress-when-inactive: false
+    actions:
+      vanilla_fish_catch:
+        enabled: true
+        progress: 1.0
+        cooldown-ms: 0
+      yumaria_fish_catch:
+        enabled: true
+        progress: 1.0
+        cooldown-ms: 0
+    rewards:
+      default:
+        money: "4 * %level%"
+        commands:
+          - "eco give %player% %money%"
+      levels:
+        10:
+          commands:
+            - "lp user %player% permission set yumaria.jobs.fisherman.10"
+        20:
+          commands:
+            - "lp user %player% permission set yumaria.jobs.fisherman.20"
+
+  hunter:
+    enabled: true
+    display-name: "Chasseur"
+    description:
+      - "Affronte les créatures et protège Yumaria."
+      - "Vaincre des monstres permet de progresser."
+    icon:
+      material: BOW
+      itemsadder-id: ""
+    max-level: 100
+    required-progress: "6 * (%level% ^ 2)"
+    points-rewarded: "1 * %level%"
+    allow-progress-when-inactive: false
+    actions:
+      vanilla_mob_kill:
+        enabled: true
+        progress: 1.0
+        cooldown-ms: 0
+    rewards:
+      default:
+        money: "4 * %level%"
+        commands:
+          - "eco give %player% %money%"
+      levels:
+        10:
+          commands:
+            - "lp user %player% permission set yumaria.jobs.hunter.10"
+        20:
+          commands:
+            - "lp user %player% permission set yumaria.jobs.hunter.20"
