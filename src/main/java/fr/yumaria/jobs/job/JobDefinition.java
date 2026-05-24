@@ -13,7 +13,9 @@ public final class JobDefinition {
     private final String requiredProgressExpression;
     private final String pointsRewardedExpression;
     private final boolean allowProgressWhenInactive;
+    private final double xpMultiplier;
     private final Map<String, JobActionDefinition> actions;
+    private final Map<String, JobSourceDefinition> sources;
     private final RewardDefinition defaultReward;
     private final Map<Integer, RewardDefinition> levelRewards;
 
@@ -27,7 +29,9 @@ public final class JobDefinition {
             String requiredProgressExpression,
             String pointsRewardedExpression,
             boolean allowProgressWhenInactive,
+            double xpMultiplier,
             Map<String, JobActionDefinition> actions,
+            Map<String, JobSourceDefinition> sources,
             RewardDefinition defaultReward,
             Map<Integer, RewardDefinition> levelRewards
     ) {
@@ -40,7 +44,9 @@ public final class JobDefinition {
         this.requiredProgressExpression = requiredProgressExpression;
         this.pointsRewardedExpression = pointsRewardedExpression;
         this.allowProgressWhenInactive = allowProgressWhenInactive;
+        this.xpMultiplier = Math.max(0.0D, xpMultiplier);
         this.actions = Map.copyOf(actions);
+        this.sources = Map.copyOf(sources);
         this.defaultReward = defaultReward;
         this.levelRewards = Map.copyOf(levelRewards);
     }
@@ -81,8 +87,16 @@ public final class JobDefinition {
         return allowProgressWhenInactive;
     }
 
+    public double xpMultiplier() {
+        return xpMultiplier;
+    }
+
     public Map<String, JobActionDefinition> actions() {
         return actions;
+    }
+
+    public Map<String, JobSourceDefinition> sources() {
+        return sources;
     }
 
     public RewardDefinition defaultReward() {

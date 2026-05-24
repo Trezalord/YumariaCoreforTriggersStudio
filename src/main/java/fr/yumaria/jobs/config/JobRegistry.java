@@ -4,6 +4,7 @@ import fr.yumaria.jobs.YumariaJobsPlugin;
 import fr.yumaria.jobs.job.IconDefinition;
 import fr.yumaria.jobs.job.JobActionDefinition;
 import fr.yumaria.jobs.job.JobDefinition;
+import fr.yumaria.jobs.job.JobSourceDefinition;
 import fr.yumaria.jobs.job.RewardDefinition;
 import fr.yumaria.jobs.util.Text;
 import org.bukkit.Material;
@@ -113,6 +114,7 @@ public final class JobRegistry {
         }
         IconDefinition icon = new IconDefinition(material, section.getString("icon.itemsadder-id", ""));
         Map<String, JobActionDefinition> actions = parseActions(section.getConfigurationSection("actions"));
+        Map<String, JobSourceDefinition> sources = parseSources(section.getConfigurationSection("sources"));
         RewardDefinition defaultReward = parseReward(section.getConfigurationSection("rewards.default"));
         Map<Integer, RewardDefinition> levelRewards = parseLevelRewards(section.getConfigurationSection("rewards.levels"));
 
@@ -126,7 +128,9 @@ public final class JobRegistry {
                 section.getString("required-progress", "6 * (%level% ^ 2)"),
                 section.getString("points-rewarded", "1 * %level%"),
                 section.getBoolean("allow-progress-when-inactive", false),
+                section.getDouble("xp.multiplier", section.getDouble("xp-multiplier", 1.0D)),
                 actions,
+                sources,
                 defaultReward,
                 levelRewards
         );
@@ -149,6 +153,24 @@ public final class JobRegistry {
             ));
         }
         return actions;
+    }
+
+    private Map<String, JobSourceDefinition> parseSources(ConfigurationSection section) {
+        Map<String, JobSourceDefinition> sources = new HashMap<>();
+        if (section == null) {
+            return sources;
+        }
+        for (String source : section.getKeys(false)) {
+            ConfigurationSection sourceSection = section.getConfigurationSection(source);
+            if (sourceSection == null) {
+                continue;
+            }
+            sources.put(Text.normalizeId(source), new JobSourceDefinition(
+                    sourceSection.getBoolean("enabled", true),
+                    sourceSection.getDouble("multiplier", 1.0D)
+            ));
+        }
+        return sources;
     }
 
     private Map<Integer, RewardDefinition> parseLevelRewards(ConfigurationSection section) {

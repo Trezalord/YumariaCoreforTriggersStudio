@@ -1,6 +1,8 @@
 package fr.yumaria.jobs.command;
 
 import fr.yumaria.jobs.YumariaJobsPlugin;
+import fr.yumaria.jobs.api.model.JobXpRequest;
+import fr.yumaria.jobs.api.model.ProgressionResult;
 import fr.yumaria.jobs.config.JobRegistry;
 import fr.yumaria.jobs.config.LanguageService;
 import fr.yumaria.jobs.config.RankService;
@@ -74,6 +76,15 @@ public final class YJobsCommand implements CommandExecutor, TabCompleter {
         if (args.length >= 1 && args[0].equalsIgnoreCase("debug")) {
             return debug(sender, args);
         }
+        if (args.length >= 1 && args[0].equalsIgnoreCase("profile")) {
+            return profile(sender, args);
+        }
+        if (args.length >= 1 && args[0].equalsIgnoreCase("xp")) {
+            return xp(sender, args);
+        }
+        if (args.length >= 1 && args[0].equalsIgnoreCase("level")) {
+            return level(sender, args);
+        }
         if (args.length >= 1 && args[0].equalsIgnoreCase("admin")) {
             return admin(sender, args);
         }
@@ -111,6 +122,73 @@ public final class YJobsCommand implements CommandExecutor, TabCompleter {
         for (String line : yumariaFishingHook.describeItem(itemStack)) {
             sender.sendMessage(Text.color(line));
         }
+        return true;
+    }
+
+    private boolean profile(CommandSender sender, String[] args) {
+        if (args.length < 2) {
+            languageService.send(sender, "commands.usage.yjobs");
+            return true;
+        }
+        return debugInfo(sender, new String[] {"debug", "info", args[1]});
+    }
+
+    private boolean xp(CommandSender sender, String[] args) {
+        if (args.length < 5 || !args[1].equalsIgnoreCase("add")) {
+            languageService.send(sender, "commands.usage.yjobs");
+            return true;
+        }
+        Player target = Bukkit.getPlayerExact(args[2]);
+        if (target == null) {
+            languageService.send(sender, "commands.unknown-player");
+            return true;
+        }
+        Optional<JobDefinition> job = jobRegistry.get(args[3]);
+        if (job.isEmpty()) {
+            languageService.send(sender, "commands.unknown-job");
+            return true;
+        }
+        double amount = parseDouble(sender, args[4]);
+        if (Double.isNaN(amount)) {
+            return true;
+        }
+        String source = args.length >= 6 ? args[5] : "admin";
+        ProgressionResult result = progressService.giveXp(JobXpRequest.builder()
+                .player(target)
+                .jobId(job.get().id())
+                .baseAmount(amount)
+                .source(source)
+                .context("admin", sender.getName())
+                .build());
+        if (result.success()) {
+            languageService.send(sender, "jobs.progress-added", Map.of("%player%", target.getName()));
+        } else {
+            languageService.send(sender, "jobs.debug-progress-blocked", Map.of("%reason%", result.failureReason().name()));
+        }
+        return true;
+    }
+
+    private boolean level(CommandSender sender, String[] args) {
+        if (args.length < 5 || !args[1].equalsIgnoreCase("set")) {
+            languageService.send(sender, "commands.usage.yjobs");
+            return true;
+        }
+        Player target = Bukkit.getPlayerExact(args[2]);
+        if (target == null) {
+            languageService.send(sender, "commands.unknown-player");
+            return true;
+        }
+        Optional<JobDefinition> job = jobRegistry.get(args[3]);
+        if (job.isEmpty()) {
+            languageService.send(sender, "commands.unknown-job");
+            return true;
+        }
+        int level = parseInt(sender, args[4]);
+        if (level < 0) {
+            return true;
+        }
+        playerJobService.setLevel(target, job.get(), level);
+        languageService.send(sender, "jobs.set-level", Map.of("%player%", target.getName()));
         return true;
     }
 
@@ -299,7 +377,13 @@ public final class YJobsCommand implements CommandExecutor, TabCompleter {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            return startsWith(args[0], List.of("reload", "admin", "debug"));
+            return startsWith(args[0], List.of("reload", "profile", "xp", "level", "admin", "debug"));
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("xp")) {
+            return startsWith(args[1], List.of("add"));
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("level")) {
+            return startsWith(args[1], List.of("set"));
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("admin")) {
             return startsWith(args[1], List.of("addprogress", "setlevel", "reset"));
@@ -313,7 +397,16 @@ public final class YJobsCommand implements CommandExecutor, TabCompleter {
         if (args.length == 3 && args[0].equalsIgnoreCase("debug")) {
             return startsWith(args[2], Bukkit.getOnlinePlayers().stream().map(Player::getName).toList());
         }
+        if (args.length == 2 && args[0].equalsIgnoreCase("profile")) {
+            return startsWith(args[1], Bukkit.getOnlinePlayers().stream().map(Player::getName).toList());
+        }
+        if (args.length == 3 && (args[0].equalsIgnoreCase("xp") || args[0].equalsIgnoreCase("level"))) {
+            return startsWith(args[2], Bukkit.getOnlinePlayers().stream().map(Player::getName).toList());
+        }
         if (args.length == 4 && args[0].equalsIgnoreCase("admin")) {
+            return startsWith(args[3], jobRegistry.all().stream().map(JobDefinition::id).toList());
+        }
+        if (args.length == 4 && (args[0].equalsIgnoreCase("xp") || args[0].equalsIgnoreCase("level"))) {
             return startsWith(args[3], jobRegistry.all().stream().map(JobDefinition::id).toList());
         }
         if (args.length == 4 && args[0].equalsIgnoreCase("debug") && args[1].equalsIgnoreCase("progress")) {

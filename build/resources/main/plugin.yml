@@ -11,6 +11,8 @@ softdepend:
   - ItemsAdder
   - Citizens
   - YumariaFishing
+  - YumariaFarming
+  - YumariaRewards
 commands:
   jobs:
     description: Ouvre le menu des métiers.

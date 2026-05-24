@@ -1,6 +1,14 @@
 package fr.yumaria.jobs;
 
 import fr.yumaria.jobs.api.YumariaJobsAPI;
+import fr.yumaria.jobs.action.ActionAntiAbuseService;
+import fr.yumaria.jobs.action.ActionEconomyService;
+import fr.yumaria.jobs.action.ActionRewardPipeline;
+import fr.yumaria.jobs.action.ActionStatsService;
+import fr.yumaria.jobs.action.ActionValidationService;
+import fr.yumaria.jobs.action.DefaultActionModifierPipelineFactory;
+import fr.yumaria.jobs.action.DefaultYumariaActionService;
+import fr.yumaria.jobs.addon.DefaultYumariaAddonRegistry;
 import fr.yumaria.jobs.command.JobsCommand;
 import fr.yumaria.jobs.command.PrestigeCommand;
 import fr.yumaria.jobs.command.YJobsCommand;
@@ -8,6 +16,7 @@ import fr.yumaria.jobs.config.JobRegistry;
 import fr.yumaria.jobs.config.LanguageService;
 import fr.yumaria.jobs.config.RankService;
 import fr.yumaria.jobs.data.PlayerDataService;
+import fr.yumaria.jobs.economy.DefaultYumariaEconomyService;
 import fr.yumaria.jobs.gui.JobGuiService;
 import fr.yumaria.jobs.hook.EconomyService;
 import fr.yumaria.jobs.hook.ItemsAdderIconService;
@@ -45,6 +54,9 @@ public final class YumariaJobsPlugin extends JavaPlugin {
     private ItemsAdderIconService itemsAdderIconService;
     private YumariaFishingHook yumariaFishingHook;
     private RewardService rewardService;
+    private DefaultYumariaAddonRegistry addonRegistry;
+    private DefaultYumariaEconomyService economyApiService;
+    private DefaultYumariaActionService actionService;
     private ProgressFormatter progressFormatter;
     private BossBarManager bossBarManager;
     private ProgressBarService progressBarService;
@@ -65,6 +77,8 @@ public final class YumariaJobsPlugin extends JavaPlugin {
         playerDataService.start();
         progressionService = new ProgressionService(this);
         economyService = new EconomyService(this);
+        economyApiService = new DefaultYumariaEconomyService(this, economyService);
+        addonRegistry = new DefaultYumariaAddonRegistry(this);
         itemsAdderIconService = new ItemsAdderIconService(this);
         rewardService = new RewardService(this, economyService, progressionService);
         placeholderService = new JobPlaceholderService(this, progressionService, rankService);
@@ -74,6 +88,17 @@ public final class YumariaJobsPlugin extends JavaPlugin {
         progressBarService = new ProgressBarService(this, progressionService, rankService, progressFormatter, bossBarManager);
         playerJobService = new PlayerJobService(this, playerDataService);
         jobProgressService = new JobProgressService(this, jobRegistry, playerDataService, progressionService, rewardService, progressBarService, languageService);
+        actionService = new DefaultYumariaActionService(
+                this,
+                new ActionValidationService(this, jobRegistry, playerDataService, addonRegistry),
+                DefaultActionModifierPipelineFactory.create(this),
+                new ActionAntiAbuseService(this),
+                new ActionEconomyService(economyApiService),
+                new ActionRewardPipeline(),
+                new ActionStatsService(playerDataService),
+                jobProgressService
+        );
+        jobProgressService.setCoreServices(actionService, economyApiService, addonRegistry);
         yumariaFishingHook = new YumariaFishingHook(this, jobRegistry, playerDataService, jobProgressService);
         guiService = new JobGuiService(this, jobRegistry, playerDataService, playerJobService, placeholderService, itemsAdderIconService, languageService);
 
@@ -226,6 +251,7 @@ public final class YumariaJobsPlugin extends JavaPlugin {
         debugJobs("Registered listeners=" + registeredListeners);
         debugJobs("Registered commands=" + registeredCommands);
         debugJobs("YumariaFishing hook=" + yumariaFishingHook.status());
+        debugJobs("Addon registry loaded addons=" + addonRegistry.getAddons().size());
         debugBossbar("Progress-bar enabled=" + getConfig().getBoolean("progress-bar.enabled", true)
                 + ", durationSeconds=" + getConfig().getLong("progress-bar.display-duration-seconds", 8L)
                 + ", color=" + getConfig().getString("progress-bar.color", "PURPLE")

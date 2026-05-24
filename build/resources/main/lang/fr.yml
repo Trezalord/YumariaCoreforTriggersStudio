@@ -8,7 +8,7 @@ commands:
   usage:
     jobs: "&e/jobs join <métier>&7, &e/jobs leave <métier>&7, &e/jobs stats [joueur]&7, &e/jobs top <métier>&7, &e/jobs toggle <métier>"
     prestige: "&e/prestige <métier>"
-    yjobs: "&e/yjobs reload &7ou &e/yjobs admin addprogress <joueur> <métier> <montant>"
+    yjobs: "&e/yjobs reload&7, &e/yjobs profile <joueur>&7, &e/yjobs xp add <joueur> <métier> <montant> [source]&7, &e/yjobs level set <joueur> <métier> <niveau>"
     yjobs-debug: "&e/yjobs debug progress <joueur> <métier> <montant>&7, &e/yjobs debug info <joueur> &7ou &e/yjobs debug item"
   reload: "&aConfiguration rechargée."
 jobs:

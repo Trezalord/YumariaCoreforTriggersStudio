@@ -1,6 +1,8 @@
 package fr.yumaria.jobs.reward;
 
 import fr.yumaria.jobs.YumariaJobsPlugin;
+import fr.yumaria.jobs.api.event.YumariaJobRewardEvent;
+import fr.yumaria.jobs.api.model.RewardResult;
 import fr.yumaria.jobs.data.PlayerJobData;
 import fr.yumaria.jobs.hook.EconomyService;
 import fr.yumaria.jobs.job.JobDefinition;
@@ -14,8 +16,9 @@ import org.bukkit.entity.Player;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
-public final class RewardService {
+public final class RewardService implements fr.yumaria.jobs.api.RewardService {
     private final YumariaJobsPlugin plugin;
     private final EconomyService economyService;
     private final ProgressionService progressionService;
@@ -31,29 +34,44 @@ public final class RewardService {
         this.placeholderService = placeholderService;
     }
 
-    public void applyLevelRewards(Player player, JobDefinition job, PlayerJobData data) {
+    public List<RewardResult> applyLevelRewards(Player player, JobDefinition job, PlayerJobData data) {
+        java.util.ArrayList<RewardResult> results = new java.util.ArrayList<>();
         double points = progressionService.pointsRewarded(job, data);
         data.addPoints(points);
-        applyReward(player, job, data, job.defaultReward());
+        results.add(RewardResult.success("points", "level points", points));
+        results.addAll(applyReward(player, job, data, job.defaultReward(), "level-up-default"));
         RewardDefinition levelReward = job.levelRewards().get(data.getLevel());
         if (levelReward != null) {
-            applyReward(player, job, data, levelReward);
+            results.addAll(applyReward(player, job, data, levelReward, "level-up-" + data.getLevel()));
         }
+        return List.copyOf(results);
     }
 
-    public void applyPrestigeRewards(Player player, JobDefinition job, PlayerJobData data) {
+    public List<RewardResult> applyPrestigeRewards(Player player, JobDefinition job, PlayerJobData data) {
         ConfigurationSection section = plugin.getConfig().getConfigurationSection("prestige.rewards");
         if (section == null) {
-            return;
+            return List.of();
         }
         RewardDefinition reward = new RewardDefinition(section.getString("money", "0"), section.getStringList("commands"));
-        applyReward(player, job, data, reward);
+        return applyReward(player, job, data, reward, "prestige");
     }
 
-    private void applyReward(Player player, JobDefinition job, PlayerJobData data, RewardDefinition reward) {
+    @Override
+    public List<RewardResult> previewRewards(UUID playerId, String jobId) {
+        return List.of();
+    }
+
+    private List<RewardResult> applyReward(Player player, JobDefinition job, PlayerJobData data, RewardDefinition reward, String trigger) {
+        YumariaJobRewardEvent event = new YumariaJobRewardEvent(player, job.id(), trigger, data.getLevel(), data.getPrestige());
+        Bukkit.getPluginManager().callEvent(event);
+        if (event.isCancelled()) {
+            return List.of(RewardResult.skipped("reward", "cancelled by YumariaJobRewardEvent"));
+        }
+        java.util.ArrayList<RewardResult> results = new java.util.ArrayList<>();
         double money = progressionService.evaluateMoney(reward.moneyExpression(), job, data);
         if (money > 0.0D) {
             economyService.deposit(player, money);
+            results.add(RewardResult.success("money", "vault deposit", money));
         }
 
         Map<String, String> placeholders = placeholderService.placeholders(player, job, data);
@@ -61,6 +79,10 @@ public final class RewardService {
         placeholders.put("%money_raw%", Text.formatCommandNumber(money));
         placeholders.put("%money_display%", Text.formatNumber(money));
         dispatchCommands(reward.commands(), placeholders);
+        if (!reward.commands().isEmpty()) {
+            results.add(RewardResult.success("commands", "dispatched " + reward.commands().size() + " command(s)", reward.commands().size()));
+        }
+        return List.copyOf(results);
     }
 
     private void dispatchCommands(List<String> commands, Map<String, String> placeholders) {

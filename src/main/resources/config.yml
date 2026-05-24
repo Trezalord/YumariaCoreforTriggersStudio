@@ -10,13 +10,75 @@ allow-multiple-active-jobs: true
 max-active-jobs: 2
 save-interval-seconds: 300
 
+addons:
+  # If true, external plugins must register through YumariaJobsAPI.get().addons().
+  require-registration: false
+  # If false, an addon must be explicitly listed under addons.allowed.
+  accept-unconfigured: true
+  allowed:
+    YumariaFishing:
+      enabled: true
+      professions:
+        fisherman:
+          enabled: true
+          allowed-actions:
+            fish_catch:
+              enabled: true
+              base-xp-multiplier: 1.0
+              base-money-multiplier: 1.0
+    YumariaFarming:
+      enabled: true
+      professions:
+        farmer:
+          enabled: true
+          allowed-actions:
+            crop_harvest:
+              enabled: true
+              base-xp-multiplier: 1.0
+              base-money-multiplier: 1.0
+
+progression:
+  global-xp-multiplier: 1.0
+  global-money-multiplier: 1.0
+  permission-multipliers:
+    yumariajobs.booster.vip: 1.10
+    yumariajobs.booster.mvp: 1.20
+
+economy:
+  enabled: true
+
+professions:
+  fisherman:
+    display-name: "&bPêcheur"
+    enabled: true
+    requires-active-job: true
+    money:
+      enabled: true
+      multiplier: 1.0
+  farmer:
+    display-name: "&aFermier"
+    enabled: true
+    requires-active-job: true
+    money:
+      enabled: true
+      multiplier: 1.0
+
+xp:
+  enabled: true
+  global-multiplier: 1.0
+  prestige-multiplier-per-prestige: 1.0
+  permission-multipliers:
+    yumariajobs.booster.vip: 1.10
+    yumariajobs.booster.mvp: 1.20
+
 progress:
   auto-join-on-progress: false
   save-delay-ticks: 40
 
 integrations:
   yumaria-fishing:
-    enabled: true
+    # Legacy compatibility hook. The target architecture is that YumariaFishing calls YumariaJobsAPI directly.
+    enabled: false
     job-id: "pecheur"
     debug: false
     catch-detection-delay-ticks: 2
@@ -64,6 +126,53 @@ integrations:
         GOLD: 1.35
         IRIDIUM: 1.75
         DIAMOND: 1.75
+
+anti-abuse:
+  enabled: true
+  debug: false
+  defaults:
+    min-delay-ms: 0
+    max-xp-per-minute: 5000
+    max-xp-per-hour: 75000
+    suspicious-burst-actions: 0
+    diminishing-returns:
+      enabled: false
+      window-seconds: 300
+      threshold-actions: 120
+      reduction-per-extra-action: 0.01
+      max-reduction: 0.50
+  jobs:
+    fisherman:
+      sources:
+        yumariafishing:
+          min-delay-ms: 500
+          max-xp-per-minute: 5000
+          max-xp-per-hour: 75000
+          diminishing-returns:
+            enabled: true
+            window-seconds: 300
+            threshold-actions: 120
+            reduction-per-extra-action: 0.01
+            max-reduction: 0.50
+  actions:
+    YumariaFishing:
+      fish_catch:
+        min-delay-ms: 500
+        max-xp-per-minute: 5000
+        max-money-per-minute: 25000
+        max-actions-per-minute: 120
+        diminishing-returns:
+          enabled: true
+          window-seconds: 300
+          threshold-actions: 100
+          reduction-per-extra-action: 0.01
+          max-reduction: 0.50
+    YumariaFarming:
+      crop_harvest:
+        min-delay-ms: 250
+        max-xp-per-minute: 5000
+        max-money-per-minute: 25000
+        max-actions-per-minute: 180
 
 progress-bar:
   enabled: true

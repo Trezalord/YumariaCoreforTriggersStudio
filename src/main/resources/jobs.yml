@@ -12,6 +12,8 @@ jobs:
     required-progress: "6 * (%level% ^ 2)"
     points-rewarded: "1 * %level%"
     allow-progress-when-inactive: false
+    xp:
+      multiplier: 1.0
     actions:
       vanilla_block_break:
         enabled: true
@@ -43,6 +45,8 @@ jobs:
     required-progress: "6 * (%level% ^ 2)"
     points-rewarded: "1 * %level%"
     allow-progress-when-inactive: false
+    xp:
+      multiplier: 1.0
     actions:
       vanilla_log_break:
         enabled: true
@@ -74,6 +78,12 @@ jobs:
     required-progress: "6 * (%level% ^ 2)"
     points-rewarded: "1 * %level%"
     allow-progress-when-inactive: false
+    xp:
+      multiplier: 1.0
+    sources:
+      YumariaFarming:
+        enabled: true
+        multiplier: 1.0
     actions:
       vanilla_crop_harvest:
         enabled: true
@@ -109,6 +119,12 @@ jobs:
     required-progress: "6 * (%level% ^ 2)"
     points-rewarded: "1 * %level%"
     allow-progress-when-inactive: false
+    xp:
+      multiplier: 1.0
+    sources:
+      YumariaFishing:
+        enabled: true
+        multiplier: 1.0
     actions:
       vanilla_fish_catch:
         enabled: true
@@ -144,6 +160,12 @@ jobs:
     required-progress: "6 * (%level% ^ 2)"
     points-rewarded: "1 * %level%"
     allow-progress-when-inactive: false
+    xp:
+      multiplier: 1.0
+    sources:
+      YumariaMobs:
+        enabled: true
+        multiplier: 1.0
     actions:
       vanilla_mob_kill:
         enabled: true

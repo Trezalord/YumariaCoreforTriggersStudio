@@ -1,10 +1,24 @@
 package fr.yumaria.jobs.progress;
 
 import fr.yumaria.jobs.YumariaJobsPlugin;
+import fr.yumaria.jobs.anticheat.AntiAbuseResult;
+import fr.yumaria.jobs.anticheat.ProgressionAntiAbuseService;
+import fr.yumaria.jobs.api.JobStatsService;
+import fr.yumaria.jobs.api.JobXpService;
+import fr.yumaria.jobs.api.PlayerProfileService;
+import fr.yumaria.jobs.api.PrestigeService;
+import fr.yumaria.jobs.api.YumariaActionService;
+import fr.yumaria.jobs.api.YumariaAddonRegistry;
+import fr.yumaria.jobs.api.YumariaEconomyService;
 import fr.yumaria.jobs.api.YumariaJobsProvider;
 import fr.yumaria.jobs.api.event.YumariaJobLevelUpEvent;
 import fr.yumaria.jobs.api.event.YumariaJobPrestigeEvent;
 import fr.yumaria.jobs.api.event.YumariaJobProgressGainEvent;
+import fr.yumaria.jobs.api.event.YumariaJobXpGainEvent;
+import fr.yumaria.jobs.api.model.JobXpRequest;
+import fr.yumaria.jobs.api.model.ProgressionFailureReason;
+import fr.yumaria.jobs.api.model.ProgressionResult;
+import fr.yumaria.jobs.api.model.RewardResult;
 import fr.yumaria.jobs.config.JobRegistry;
 import fr.yumaria.jobs.config.LanguageService;
 import fr.yumaria.jobs.data.PlayerData;
@@ -12,16 +26,28 @@ import fr.yumaria.jobs.data.PlayerDataService;
 import fr.yumaria.jobs.data.PlayerJobData;
 import fr.yumaria.jobs.job.JobActionDefinition;
 import fr.yumaria.jobs.job.JobDefinition;
+import fr.yumaria.jobs.job.JobSourceDefinition;
+import fr.yumaria.jobs.progression.EventXpModifier;
+import fr.yumaria.jobs.progression.GlobalXpModifier;
+import fr.yumaria.jobs.progression.JobSpecificXpModifier;
+import fr.yumaria.jobs.progression.PermissionXpModifier;
+import fr.yumaria.jobs.progression.PrestigeXpModifier;
+import fr.yumaria.jobs.progression.SourceXpModifier;
+import fr.yumaria.jobs.progression.XpModifierContext;
+import fr.yumaria.jobs.progression.XpModifierPipeline;
 import fr.yumaria.jobs.reward.RewardService;
 import fr.yumaria.jobs.util.Text;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
-public final class JobProgressService implements YumariaJobsProvider {
+public final class JobProgressService implements YumariaJobsProvider, JobXpService, PrestigeService {
     public enum PrestigeResult {
         SUCCESS,
         DISABLED,
@@ -40,6 +66,11 @@ public final class JobProgressService implements YumariaJobsProvider {
     private final ProgressBarService progressBarService;
     private final LanguageService languageService;
     private final Map<String, Long> cooldowns = new HashMap<>();
+    private final XpModifierPipeline modifierPipeline;
+    private final ProgressionAntiAbuseService antiAbuseService;
+    private YumariaActionService actionService;
+    private YumariaEconomyService economyApiService;
+    private YumariaAddonRegistry addonRegistry;
 
     public JobProgressService(
             YumariaJobsPlugin plugin,
@@ -57,6 +88,61 @@ public final class JobProgressService implements YumariaJobsProvider {
         this.rewardService = rewardService;
         this.progressBarService = progressBarService;
         this.languageService = languageService;
+        this.modifierPipeline = new XpModifierPipeline(List.of(
+                new GlobalXpModifier(plugin),
+                new JobSpecificXpModifier(),
+                new SourceXpModifier(),
+                new PrestigeXpModifier(plugin),
+                new PermissionXpModifier(plugin),
+                new EventXpModifier()
+        ));
+        this.antiAbuseService = new ProgressionAntiAbuseService(plugin);
+    }
+
+    public void setCoreServices(YumariaActionService actionService, YumariaEconomyService economyApiService, YumariaAddonRegistry addonRegistry) {
+        this.actionService = actionService;
+        this.economyApiService = economyApiService;
+        this.addonRegistry = addonRegistry;
+    }
+
+    @Override
+    public YumariaActionService actions() {
+        return actionService;
+    }
+
+    @Override
+    public JobXpService xp() {
+        return this;
+    }
+
+    @Override
+    public PlayerProfileService profiles() {
+        return playerDataService;
+    }
+
+    @Override
+    public YumariaEconomyService economy() {
+        return economyApiService;
+    }
+
+    @Override
+    public PrestigeService prestiges() {
+        return this;
+    }
+
+    @Override
+    public JobStatsService stats() {
+        return playerDataService;
+    }
+
+    @Override
+    public fr.yumaria.jobs.api.RewardService rewards() {
+        return rewardService;
+    }
+
+    @Override
+    public YumariaAddonRegistry addons() {
+        return addonRegistry;
     }
 
     @Override
@@ -71,107 +157,200 @@ public final class JobProgressService implements YumariaJobsProvider {
             Bukkit.getScheduler().runTask(plugin, () -> addProgress(player, jobId, requestedAmount, source, safeContext));
             return;
         }
-        if (player == null || amount <= 0.0D) {
-            plugin.debugProgress("addProgress ignored: invalid player/amount player=" + (player == null ? "-" : player.getName())
-                    + ", job=" + jobId
-                    + ", amount=" + amount
-                    + ", source=" + source);
-            return;
+        giveXp(JobXpRequest.builder()
+                .player(player)
+                .jobId(jobId)
+                .baseAmount(amount)
+                .source(source)
+                .context(safeContext)
+                .build());
+    }
+
+    @Override
+    public ProgressionResult giveXp(Player player, String jobId, double amount, String source) {
+        return giveXp(JobXpRequest.builder()
+                .player(player)
+                .jobId(jobId)
+                .baseAmount(amount)
+                .source(source)
+                .build());
+    }
+
+    @Override
+    public ProgressionResult giveXp(UUID playerId, String jobId, double amount, String source) {
+        Player player = playerId == null ? null : Bukkit.getPlayer(playerId);
+        return giveXp(JobXpRequest.builder()
+                .player(player)
+                .playerId(playerId)
+                .jobId(jobId)
+                .baseAmount(amount)
+                .source(source)
+                .build());
+    }
+
+    @Override
+    public ProgressionResult giveXp(JobXpRequest request) {
+        if (request == null) {
+            return ProgressionResult.failure(ProgressionFailureReason.INTERNAL_ERROR, "", 0.0D, "request is null");
         }
-        String normalizedJobId = Text.normalizeId(jobId);
-        Optional<JobDefinition> optionalJob = jobRegistry.get(normalizedJobId);
+        if (!Bukkit.isPrimaryThread()) {
+            return ProgressionResult.failure(ProgressionFailureReason.INTERNAL_ERROR, request.jobId(), request.baseAmount(), "giveXp must be called on the main server thread");
+        }
+        return applyXp(request);
+    }
+
+    private ProgressionResult applyXp(JobXpRequest request) {
+        List<String> debugMessages = new ArrayList<>();
+        Map<String, Object> safeContext = sanitizeContext(request.context());
+        Player player = request.playerId() == null ? null : Bukkit.getPlayer(request.playerId());
+        if (player == null) {
+            return failure(ProgressionFailureReason.PLAYER_NOT_FOUND, request, debugMessages, "player is not online");
+        }
+        if (request.baseAmount() <= 0.0D || Double.isNaN(request.baseAmount()) || Double.isInfinite(request.baseAmount())) {
+            return failure(ProgressionFailureReason.INVALID_AMOUNT, request, debugMessages, "invalid XP amount");
+        }
+        if (!plugin.getConfig().getBoolean("xp.enabled", true)) {
+            return failure(ProgressionFailureReason.XP_DISABLED, request, debugMessages, "xp.enabled is false");
+        }
+
+        Optional<JobDefinition> optionalJob = jobRegistry.get(request.jobId());
         if (optionalJob.isEmpty() || !optionalJob.get().enabled()) {
-            plugin.debugProgress("addProgress ignored: unknown or disabled job input=" + jobId + ", normalized=" + normalizedJobId + ", player=" + player.getName());
-            return;
+            return failure(ProgressionFailureReason.JOB_NOT_FOUND, request, debugMessages, "unknown or disabled job");
         }
 
         JobDefinition job = optionalJob.get();
-        plugin.debugProgress("addProgress start: player=" + player.getName()
+        String normalizedSource = Text.normalizeId(request.source());
+        plugin.debugProgress("giveXp start: player=" + player.getName()
                 + ", job=" + job.id()
-                + ", requestedAmount=" + amount
-                + ", source=" + Text.normalizeId(source)
+                + ", baseXp=" + request.baseAmount()
+                + ", source=" + normalizedSource
                 + ", context=" + safeContext);
-        PlayerData data = playerDataService.getOrLoad(player);
+
+        PlayerData data;
+        try {
+            data = playerDataService.getOrLoad(player);
+        } catch (RuntimeException exception) {
+            return failure(ProgressionFailureReason.PROFILE_NOT_LOADED, request, debugMessages, exception.getMessage());
+        }
+
         PlayerJobData jobData = data.peekJob(job.id());
         if (jobData == null || !jobData.isJoined()) {
             if (!plugin.getConfig().getBoolean("progress.auto-join-on-progress", false)) {
-                plugin.debugProgress("addProgress ignored: player has not joined job. player=" + player.getName()
-                        + ", job=" + job.id()
-                        + ", autoJoin=false");
-                return;
+                return failure(ProgressionFailureReason.JOB_NOT_ACTIVE, request, debugMessages, "player has not joined job " + job.id());
             }
             jobData = data.job(job.id());
             jobData.setJoined(true);
-            plugin.debugProgress("addProgress auto-joined player=" + player.getName() + ", job=" + job.id());
+            debugMessages.add("auto-joined job " + job.id());
         }
 
         if (!jobData.isActive() && !job.allowProgressWhenInactive()) {
-            plugin.debugProgress("addProgress ignored: job inactive. player=" + player.getName()
-                    + ", job=" + job.id()
-                    + ", allowProgressWhenInactive=false");
-            return;
+            return failure(ProgressionFailureReason.JOB_NOT_ACTIVE, request, debugMessages, "job is inactive");
+        }
+
+        JobSourceDefinition sourceDefinition = job.sources().get(normalizedSource);
+        if (sourceDefinition != null && !sourceDefinition.enabled()) {
+            return failure(ProgressionFailureReason.SOURCE_BLOCKED, request, debugMessages, "source disabled by job config");
         }
 
         int oldLevel = jobData.getLevel();
+        int oldPrestige = jobData.getPrestige();
         double oldProgress = jobData.getProgress();
         double oldRequired = progressionService.requiredProgress(job, jobData);
-        String normalizedSource = Text.normalizeId(source);
+        double baseXp = request.baseAmount();
         JobActionDefinition action = job.actions().get(normalizedSource);
         if (action != null) {
             if (!action.enabled()) {
-                plugin.debugProgress("addProgress ignored: action disabled. player=" + player.getName()
-                        + ", job=" + job.id()
-                        + ", source=" + normalizedSource);
-                return;
+                return failure(ProgressionFailureReason.SOURCE_BLOCKED, request, debugMessages, "job action disabled");
             }
             if (isOnCooldown(player, job, normalizedSource, action.cooldownMs())) {
-                plugin.debugProgress("addProgress ignored: action cooldown. player=" + player.getName()
-                        + ", job=" + job.id()
-                        + ", source=" + normalizedSource
-                        + ", cooldownMs=" + action.cooldownMs());
-                return;
+                return failure(ProgressionFailureReason.SOURCE_BLOCKED, request, debugMessages, "job action cooldown");
             }
-            amount *= action.progress();
-            plugin.debugProgress("addProgress action matched: job=" + job.id()
-                    + ", source=" + normalizedSource
-                    + ", multiplier/progress=" + action.progress()
-                    + ", calculatedAmount=" + amount);
-        } else {
-            plugin.debugProgress("addProgress source has no configured action; using supplied amount. job=" + job.id()
-                    + ", source=" + normalizedSource
-                    + ", amount=" + amount);
+            baseXp *= action.progress();
+            debugMessages.add("action " + normalizedSource + " multiplier=" + action.progress());
         }
 
-        YumariaJobProgressGainEvent event = new YumariaJobProgressGainEvent(player, job.id(), amount, normalizedSource, safeContext);
-        Bukkit.getPluginManager().callEvent(event);
-        if (event.isCancelled() || event.getAmount() <= 0.0D) {
-            plugin.debugProgress("addProgress ignored: YumariaJobProgressGainEvent cancelled or non-positive. player=" + player.getName()
-                    + ", job=" + job.id()
-                    + ", cancelled=" + event.isCancelled()
-                    + ", amount=" + event.getAmount());
-            return;
+        XpModifierPipeline.XpCalculation calculation = modifierPipeline.apply(new XpModifierContext(
+                player,
+                job,
+                jobData,
+                normalizedSource,
+                baseXp,
+                safeContext
+        ));
+        debugMessages.addAll(calculation.debugMessages());
+        double finalXp = calculation.finalXp();
+
+        YumariaJobXpGainEvent xpEvent = new YumariaJobXpGainEvent(player, job.id(), request.baseAmount(), finalXp, normalizedSource, safeContext);
+        Bukkit.getPluginManager().callEvent(xpEvent);
+        if (xpEvent.isCancelled() || xpEvent.getFinalXp() <= 0.0D) {
+            return failure(ProgressionFailureReason.EVENT_CANCELLED, request, debugMessages, "YumariaJobXpGainEvent cancelled or zeroed");
+        }
+        finalXp = xpEvent.getFinalXp();
+
+        YumariaJobProgressGainEvent legacyEvent = new YumariaJobProgressGainEvent(player, job.id(), finalXp, normalizedSource, safeContext);
+        Bukkit.getPluginManager().callEvent(legacyEvent);
+        if (legacyEvent.isCancelled() || legacyEvent.getAmount() <= 0.0D) {
+            return failure(ProgressionFailureReason.EVENT_CANCELLED, request, debugMessages, "YumariaJobProgressGainEvent cancelled or zeroed");
+        }
+        finalXp = legacyEvent.getAmount();
+
+        AntiAbuseResult antiAbuse = antiAbuseService.validate(player.getUniqueId(), job.id(), normalizedSource, finalXp, safeContext);
+        debugMessages.addAll(antiAbuse.debugMessages());
+        if (!antiAbuse.accepted()) {
+            return failure(ProgressionFailureReason.ANTI_ABUSE_REJECTED, request, debugMessages, antiAbuse.reason());
+        }
+        finalXp *= antiAbuse.multiplier();
+        if (finalXp <= 0.0D) {
+            return failure(ProgressionFailureReason.ANTI_ABUSE_REJECTED, request, debugMessages, "anti-abuse reduced XP to zero");
         }
 
-        jobData.addProgress(event.getAmount());
-        handleLevelUps(player, job, jobData);
+        jobData.addProgress(finalXp);
+        jobData.recordAction(normalizedSource, finalXp, System.currentTimeMillis());
+        LevelUpOutcome levelUpOutcome = handleLevelUps(player, job, jobData);
         double required = progressionService.requiredProgress(job, jobData);
         if (jobData.getLevel() >= job.maxLevel() && jobData.getProgress() > required) {
             jobData.setProgress(required);
         }
-        plugin.debugProgress("addProgress result: player=" + player.getName()
+
+        plugin.debugProgress("giveXp result: player=" + player.getName()
                 + ", job=" + job.id()
                 + ", source=" + normalizedSource
                 + ", oldProgress=" + Text.formatNumber(oldProgress)
-                + ", addedProgress=" + Text.formatNumber(event.getAmount())
+                + ", baseXp=" + Text.formatNumber(request.baseAmount())
+                + ", finalXp=" + Text.formatNumber(finalXp)
                 + ", newProgress=" + Text.formatNumber(jobData.getProgress())
                 + ", oldLevel=" + oldLevel
                 + ", newLevel=" + jobData.getLevel()
                 + ", oldRequired=" + Text.formatNumber(oldRequired)
-                + ", required=" + Text.formatNumber(required)
-                + ", active=" + jobData.isActive()
-                + ", joined=" + jobData.isJoined());
+                + ", required=" + Text.formatNumber(required));
+
         progressBarService.showProgress(player, job, jobData);
         playerDataService.markDirty(data);
+        return ProgressionResult.builder(job.id())
+                .success(true)
+                .baseXp(request.baseAmount())
+                .finalXp(finalXp)
+                .levels(oldLevel, jobData.getLevel())
+                .prestiges(oldPrestige, jobData.getPrestige())
+                .rewards(levelUpOutcome.rewards())
+                .debug(debugMessages)
+                .build();
+    }
+
+    private ProgressionResult failure(ProgressionFailureReason reason, JobXpRequest request, List<String> debugMessages, String message) {
+        debugMessages.add(message);
+        plugin.debugProgress("giveXp rejected: player=" + request.playerName()
+                + ", job=" + request.jobId()
+                + ", amount=" + request.baseAmount()
+                + ", source=" + request.source()
+                + ", reason=" + reason
+                + ", detail=" + message);
+        return ProgressionResult.builder(request.jobId())
+                .success(false)
+                .failureReason(reason)
+                .baseXp(request.baseAmount())
+                .debug(debugMessages)
+                .build();
     }
 
     public PrestigeResult prestige(Player player, String jobId) {
@@ -205,6 +384,7 @@ public final class JobProgressService implements YumariaJobsProvider {
         }
 
         jobData.setPrestige(newPrestige);
+        jobData.incrementPrestiges();
         jobData.setLevel(plugin.getConfig().getInt("prestige.reset-level-to", 1));
         if (plugin.getConfig().getBoolean("prestige.reset-progress", true)) {
             jobData.setProgress(0.0D);
@@ -219,8 +399,44 @@ public final class JobProgressService implements YumariaJobsProvider {
     }
 
     @Override
+    public ProgressionResult applyPrestige(Player player, String jobId) {
+        if (player == null) {
+            return ProgressionResult.failure(ProgressionFailureReason.PLAYER_NOT_FOUND, jobId, 0.0D, "player is null");
+        }
+        Optional<JobDefinition> optionalJob = jobRegistry.get(jobId);
+        PlayerJobData before = optionalJob.flatMap(job -> Optional.ofNullable(playerDataService.getOrLoad(player).peekJob(job.id()))).map(PlayerJobData::copy).orElse(null);
+        PrestigeResult result = prestige(player, jobId);
+        if (result != PrestigeResult.SUCCESS) {
+            return ProgressionResult.failure(mapPrestigeFailure(result), jobId, 0.0D, result.name());
+        }
+        JobDefinition job = jobRegistry.get(jobId).orElseThrow();
+        PlayerJobData after = playerDataService.getOrLoad(player).peekJob(job.id());
+        return ProgressionResult.builder(job.id())
+                .success(true)
+                .levels(before == null ? 0 : before.getLevel(), after == null ? 0 : after.getLevel())
+                .prestiges(before == null ? 0 : before.getPrestige(), after == null ? 0 : after.getPrestige())
+                .build();
+    }
+
+    @Override
+    public ProgressionResult applyPrestige(UUID playerId, String jobId) {
+        Player player = playerId == null ? null : Bukkit.getPlayer(playerId);
+        return applyPrestige(player, jobId);
+    }
+
+    private ProgressionFailureReason mapPrestigeFailure(PrestigeResult result) {
+        return switch (result) {
+            case DISABLED -> ProgressionFailureReason.XP_DISABLED;
+            case UNKNOWN_JOB -> ProgressionFailureReason.JOB_NOT_FOUND;
+            case NOT_JOINED, REQUIRE_MAX_LEVEL, MAX_PRESTIGE -> ProgressionFailureReason.JOB_NOT_ACTIVE;
+            case CANCELLED -> ProgressionFailureReason.EVENT_CANCELLED;
+            case SUCCESS -> ProgressionFailureReason.NONE;
+        };
+    }
+
+    @Override
     public int getLevel(Player player, String jobId) {
-        return withJobData(player, jobId, data -> data.getLevel(), 0);
+        return withJobData(player, jobId, PlayerJobData::getLevel, 0);
     }
 
     @Override
@@ -257,28 +473,31 @@ public final class JobProgressService implements YumariaJobsProvider {
         return withJobData(player, jobId, PlayerJobData::isActive, false);
     }
 
-    private void handleLevelUps(Player player, JobDefinition job, PlayerJobData jobData) {
+    private LevelUpOutcome handleLevelUps(Player player, JobDefinition job, PlayerJobData jobData) {
         int guard = 0;
+        List<RewardResult> rewards = new ArrayList<>();
         while (jobData.getLevel() < job.maxLevel() && guard++ < 1000) {
             double required = progressionService.requiredProgress(job, jobData);
             if (jobData.getProgress() < required) {
-                return;
+                return new LevelUpOutcome(rewards);
             }
             int oldLevel = jobData.getLevel();
             jobData.setProgress(jobData.getProgress() - required);
             jobData.setLevel(oldLevel + 1);
+            jobData.incrementLevelUps();
             plugin.debugProgress("level-up: player=" + player.getName()
                     + ", job=" + job.id()
                     + ", oldLevel=" + oldLevel
                     + ", newLevel=" + jobData.getLevel()
                     + ", remainingProgress=" + Text.formatNumber(jobData.getProgress()));
             Bukkit.getPluginManager().callEvent(new YumariaJobLevelUpEvent(player, job.id(), oldLevel, jobData.getLevel(), jobData.getPrestige()));
-            rewardService.applyLevelRewards(player, job, jobData);
+            rewards.addAll(rewardService.applyLevelRewards(player, job, jobData));
             languageService.send(player, "jobs.level-up", Map.of(
                     "%job_name%", job.displayName(),
                     "%level%", Integer.toString(jobData.getLevel())
             ));
         }
+        return new LevelUpOutcome(rewards);
     }
 
     private boolean isOnCooldown(Player player, JobDefinition job, String source, long cooldownMs) {
@@ -319,5 +538,11 @@ public final class JobProgressService implements YumariaJobsProvider {
             return fallback;
         }
         return function.apply(data);
+    }
+
+    private record LevelUpOutcome(List<RewardResult> rewards) {
+        private LevelUpOutcome {
+            rewards = List.copyOf(rewards);
+        }
     }
 }

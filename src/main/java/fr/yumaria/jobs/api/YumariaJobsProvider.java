@@ -5,6 +5,22 @@ import org.bukkit.entity.Player;
 import java.util.Map;
 
 public interface YumariaJobsProvider {
+    YumariaActionService actions();
+
+    JobXpService xp();
+
+    PlayerProfileService profiles();
+
+    YumariaEconomyService economy();
+
+    PrestigeService prestiges();
+
+    JobStatsService stats();
+
+    RewardService rewards();
+
+    YumariaAddonRegistry addons();
+
     void addProgress(Player player, String jobId, double amount, String source, Map<String, Object> context);
 
     int getLevel(Player player, String jobId);
