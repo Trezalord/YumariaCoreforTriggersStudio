@@ -1,5 +1,7 @@
 package fr.yumaria.jobs.util;
 
+// Repere fichier YumariaJobs: outil utilitaire partage dans le plugin (MaterialMatcher).
+
 import org.bukkit.Material;
 import org.bukkit.Tag;
 import org.bukkit.block.Block;
@@ -8,6 +10,7 @@ import org.bukkit.block.data.Ageable;
 import java.util.EnumSet;
 import java.util.Set;
 
+// Role YumariaJobs: Regroupe les helpers partages du plugin.
 public final class MaterialMatcher {
     private static final Set<Material> MINER_BLOCKS = EnumSet.of(
             Material.STONE,
@@ -27,6 +30,7 @@ public final class MaterialMatcher {
             Material.END_STONE
     );
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private MaterialMatcher() {
     }
 

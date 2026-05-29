@@ -1,7 +1,10 @@
 package fr.yumaria.jobs.api.model;
 
+// Repere fichier YumariaJobs: modele public immuable utilise par l API (JobProgress).
+
 import java.util.Map;
 
+// Role YumariaJobs: Transporte des donnees API immuables entre plugins et services.
 public final class JobProgress {
     private final String jobId;
     private final boolean joined;
@@ -78,70 +81,87 @@ public final class JobProgress {
         this.lastActionTimestamps = Map.copyOf(lastActionTimestamps);
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public String jobId() {
         return jobId;
     }
 
+    // Annotation YumariaJobs: Action joueur liee aux metiers ou aux menus.
     public boolean joined() {
         return joined;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public boolean active() {
         return active;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public int level() {
         return level;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public double progress() {
         return progress;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public double totalProgress() {
         return totalProgress;
     }
 
+    // Annotation YumariaJobs: Gere la logique de prestige et ses conditions.
     public int prestige() {
         return prestige;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public double points() {
         return points;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public long totalActions() {
         return totalActions;
     }
 
+    // Annotation YumariaJobs: Controle les montees de niveau et les recompenses associees.
     public long levelUps() {
         return levelUps;
     }
 
+    // Annotation YumariaJobs: Gere la logique de prestige et ses conditions.
     public long prestiges() {
         return prestiges;
     }
 
+    // Annotation YumariaJobs: Gere la partie argent en passant par la couche economie centrale.
     public double totalMoney() {
         return totalMoney;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public Map<String, Double> sourceXp() {
         return sourceXp;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public Map<String, Integer> sourceActions() {
         return sourceActions;
     }
 
+    // Annotation YumariaJobs: Gere la partie argent en passant par la couche economie centrale.
     public Map<String, Double> sourceMoney() {
         return sourceMoney;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public Map<String, Integer> actionTypeActions() {
         return actionTypeActions;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public Map<String, Long> lastActionTimestamps() {
         return lastActionTimestamps;
     }

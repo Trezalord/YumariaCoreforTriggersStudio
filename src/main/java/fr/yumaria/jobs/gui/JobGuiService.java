@@ -1,5 +1,7 @@
 package fr.yumaria.jobs.gui;
 
+// Repere fichier YumariaJobs: interfaces graphiques des metiers (JobGuiService).
+
 import fr.yumaria.jobs.YumariaJobsPlugin;
 import fr.yumaria.jobs.config.JobRegistry;
 import fr.yumaria.jobs.config.LanguageService;
@@ -33,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+// Role YumariaJobs: Construit et gere les menus graphiques des metiers.
 public final class JobGuiService implements Listener {
     private final YumariaJobsPlugin plugin;
     private final JobRegistry jobRegistry;
@@ -61,6 +64,7 @@ public final class JobGuiService implements Listener {
         this.languageService = languageService;
     }
 
+    // Annotation YumariaJobs: Recharge la configuration sans effacer les donnees joueur en memoire.
     public void reload() {
         File target = new File(plugin.getDataFolder(), "menus/jobs.yml");
         if (!target.isFile()) {
@@ -69,6 +73,7 @@ public final class JobGuiService implements Listener {
         menuConfig = YamlConfiguration.loadConfiguration(target);
     }
 
+    // Annotation YumariaJobs: Action joueur liee aux metiers ou aux menus.
     public void refreshOpenMenus() {
         for (Player player : Bukkit.getOnlinePlayers()) {
             InventoryHolder holder = player.getOpenInventory().getTopInventory().getHolder();
@@ -80,6 +85,7 @@ public final class JobGuiService implements Listener {
         }
     }
 
+    // Annotation YumariaJobs: Action joueur liee aux metiers ou aux menus.
     public void openMain(Player player) {
         MainJobsHolder holder = new MainJobsHolder();
         Inventory inventory = Bukkit.createInventory(holder, size("main-menu.size", 54), Text.color(menuConfig.getString("main-menu.title", "&8Métiers")));
@@ -100,6 +106,7 @@ public final class JobGuiService implements Listener {
         player.openInventory(inventory);
     }
 
+    // Annotation YumariaJobs: Action joueur liee aux metiers ou aux menus.
     public void openDetail(Player player, String jobId) {
         Optional<JobDefinition> optionalJob = jobRegistry.get(jobId);
         if (optionalJob.isEmpty()) {
@@ -118,6 +125,7 @@ public final class JobGuiService implements Listener {
     }
 
     @EventHandler
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public void onInventoryClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) {
             return;
@@ -145,6 +153,7 @@ public final class JobGuiService implements Listener {
         }
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private void handleMainClick(Player player, int slot, ClickType clickType) {
         JobDefinition job = jobAtSlot(slot);
         if (job == null) {
@@ -196,6 +205,7 @@ public final class JobGuiService implements Listener {
         openMain(player);
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private JobDefinition jobAtSlot(int slot) {
         ConfigurationSection slots = menuConfig.getConfigurationSection("main-menu.job-slots");
         if (slots == null) {
@@ -209,6 +219,7 @@ public final class JobGuiService implements Listener {
         return null;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private ItemStack jobItem(Player player, JobDefinition job, String path) {
         ItemStack itemStack = iconService.createIcon(job.icon());
         ItemMeta meta = itemStack.getItemMeta();
@@ -237,6 +248,7 @@ public final class JobGuiService implements Listener {
         return itemStack;
     }
 
+    // Annotation YumariaJobs: Formate ou normalise du texte pour affichage, commandes ou recherche.
     private Map<String, String> placeholders(Player player, JobDefinition job) {
         PlayerData data = playerDataService.getOrLoad(player);
         PlayerJobData jobData = data.peekJob(job.id());
@@ -257,6 +269,7 @@ public final class JobGuiService implements Listener {
         return placeholders;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private void fill(Inventory inventory, String path) {
         if (!menuConfig.getBoolean(path + ".enabled", true)) {
             return;
@@ -267,6 +280,7 @@ public final class JobGuiService implements Listener {
         }
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private ItemStack configuredItem(String path, Material fallback, Map<String, String> placeholders) {
         Material material = Material.matchMaterial(menuConfig.getString(path + ".material", fallback.name()));
         if (material == null) {
@@ -281,6 +295,7 @@ public final class JobGuiService implements Listener {
         return itemStack;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private int size(String path, int fallback) {
         int size = menuConfig.getInt(path, fallback);
         size = Math.max(9, Math.min(54, size));
@@ -300,10 +315,12 @@ public final class JobGuiService implements Listener {
         private final String jobId;
         private Inventory inventory;
 
+        // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
         private DetailJobHolder(String jobId) {
             this.jobId = jobId;
         }
 
+        // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
         private String jobId() {
             return jobId;
         }

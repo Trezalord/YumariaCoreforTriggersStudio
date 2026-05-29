@@ -1,5 +1,7 @@
 package fr.yumaria.jobs.listener;
 
+// Repere fichier YumariaJobs: ecouteur Bukkit/Paper pour actions vanilla (NativeJobListener).
+
 import fr.yumaria.jobs.YumariaJobsPlugin;
 import fr.yumaria.jobs.progress.JobProgressService;
 import fr.yumaria.jobs.util.MaterialMatcher;
@@ -15,17 +17,21 @@ import org.bukkit.event.player.PlayerFishEvent;
 
 import java.util.Map;
 
+// Role YumariaJobs: Ecoute les evenements vanilla Paper et les convertit en progression.
 public final class NativeJobListener implements Listener {
     private final YumariaJobsPlugin plugin;
     private final JobProgressService progressService;
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public NativeJobListener(YumariaJobsPlugin plugin, JobProgressService progressService) {
         this.plugin = plugin;
         this.progressService = progressService;
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    // Annotation YumariaJobs: Point d entree Bukkit appele par un evenement serveur.
     public void onBlockBreak(BlockBreakEvent event) {
+        // Detection vanilla uniquement: les addons custom doivent appeler l'API actions().
         if (!enabled()) {
             plugin.debugListeners("BlockBreakEvent ignored: native listeners disabled");
             return;
@@ -57,7 +63,9 @@ public final class NativeJobListener implements Listener {
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    // Annotation YumariaJobs: Point d entree Bukkit appele par un evenement serveur.
     public void onFish(PlayerFishEvent event) {
+        // Ne donne de l'XP vanilla qu'au moment CAUGHT_FISH, jamais au lancer ou a la morsure.
         if (!enabled() || !plugin.getConfig().getBoolean("hooks.native-listeners.fisherman-fish-catch", true)) {
             plugin.debugListeners("PlayerFishEvent ignored: nativeEnabled=" + enabled()
                     + ", fishermanEnabled=" + plugin.getConfig().getBoolean("hooks.native-listeners.fisherman-fish-catch", true)
@@ -80,7 +88,9 @@ public final class NativeJobListener implements Listener {
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
+    // Annotation YumariaJobs: Point d entree Bukkit appele par un evenement serveur.
     public void onEntityDeath(EntityDeathEvent event) {
+        // Progression chasseur vanilla: uniquement quand un joueur tue reellement l'entite.
         if (!enabled() || !plugin.getConfig().getBoolean("hooks.native-listeners.hunter-mob-kill", true)) {
             plugin.debugListeners("EntityDeathEvent ignored: nativeEnabled=" + enabled()
                     + ", hunterEnabled=" + plugin.getConfig().getBoolean("hooks.native-listeners.hunter-mob-kill", true)
@@ -102,6 +112,7 @@ public final class NativeJobListener implements Listener {
         }
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private boolean enabled() {
         return plugin.getConfig().getBoolean("hooks.native-listeners.enabled", true);
     }

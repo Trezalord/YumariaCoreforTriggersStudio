@@ -1,5 +1,7 @@
 package fr.yumaria.jobs.addon;
 
+// Repere fichier YumariaJobs: registre des addons Yumaria connectes au coeur (DefaultYumariaAddonRegistry).
+
 import fr.yumaria.jobs.YumariaJobsPlugin;
 import fr.yumaria.jobs.api.YumariaAddon;
 import fr.yumaria.jobs.api.YumariaAddonRegistry;
@@ -14,16 +16,20 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
+// Role YumariaJobs: Gère l inscription et la sortie des addons connectes au coeur Yumaria.
 public final class DefaultYumariaAddonRegistry implements YumariaAddonRegistry {
     private final YumariaJobsPlugin plugin;
     private final Map<String, YumariaAddon> addons = new ConcurrentHashMap<>();
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public DefaultYumariaAddonRegistry(YumariaJobsPlugin plugin) {
         this.plugin = plugin;
     }
 
     @Override
+    // Annotation YumariaJobs: Enregistre un element dans Bukkit ou dans le registre YumariaJobs.
     public void registerAddon(YumariaAddon addon) {
+        // Inscription volontaire d'un addon gameplay dans le coeur YumariaJobs.
         if (addon == null || addon.id() == null || addon.id().isBlank()) {
             return;
         }
@@ -38,7 +44,9 @@ public final class DefaultYumariaAddonRegistry implements YumariaAddonRegistry {
     }
 
     @Override
+    // Annotation YumariaJobs: Enregistre un element dans Bukkit ou dans le registre YumariaJobs.
     public void unregisterAddon(String addonId) {
+        // Nettoyage du registre quand un addon se desactive/recharge.
         String key = Text.normalizeId(addonId);
         YumariaAddon removed = addons.remove(key);
         plugin.debugJobs("Addon unregistered: id=" + addonId + ", existed=" + (removed != null));
@@ -48,6 +56,7 @@ public final class DefaultYumariaAddonRegistry implements YumariaAddonRegistry {
     }
 
     @Override
+    // Annotation YumariaJobs: Enregistre un element dans Bukkit ou dans le registre YumariaJobs.
     public boolean isRegistered(String addonId) {
         return addons.containsKey(Text.normalizeId(addonId));
     }

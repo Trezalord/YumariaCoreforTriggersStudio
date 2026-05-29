@@ -1,5 +1,7 @@
 package fr.yumaria.jobs.anticheat;
 
+// Repere fichier YumariaJobs: garde-fous anti-abuse de progression (ProgressionAntiAbuseService).
+
 import fr.yumaria.jobs.YumariaJobsPlugin;
 import fr.yumaria.jobs.util.Text;
 
@@ -14,14 +16,17 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+// Role YumariaJobs: Applique les limites anti-abuse sans punir agressivement les joueurs.
 public final class ProgressionAntiAbuseService {
     private final YumariaJobsPlugin plugin;
     private final Map<String, SourceWindow> windows = new ConcurrentHashMap<>();
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public ProgressionAntiAbuseService(YumariaJobsPlugin plugin) {
         this.plugin = plugin;
     }
 
+    // Annotation YumariaJobs: Verifie les conditions avant de laisser continuer le pipeline.
     public AntiAbuseResult validate(UUID playerId, String jobId, String source, double finalXp, Map<String, Object> context) {
         if (!plugin.getConfig().getBoolean("anti-abuse.enabled", true)) {
             return AntiAbuseResult.accepted(List.of("anti-abuse disabled"));
@@ -73,6 +78,7 @@ public final class ProgressionAntiAbuseService {
         }
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private double diminishingMultiplier(String basePath, String fallbackPath, SourceWindow window, long now, List<String> debug) {
         boolean enabled = booleanConfig(basePath + "diminishing-returns.enabled", fallbackPath + "diminishing-returns.enabled", false);
         if (!enabled) {
@@ -92,18 +98,22 @@ public final class ProgressionAntiAbuseService {
         return multiplier;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private boolean booleanConfig(String path, String fallbackPath, boolean fallback) {
         return plugin.getConfig().contains(path) ? plugin.getConfig().getBoolean(path, fallback) : plugin.getConfig().getBoolean(fallbackPath, fallback);
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private long longConfig(String path, String fallbackPath, long fallback) {
         return plugin.getConfig().contains(path) ? plugin.getConfig().getLong(path, fallback) : plugin.getConfig().getLong(fallbackPath, fallback);
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private double doubleConfig(String path, String fallbackPath, double fallback) {
         return plugin.getConfig().contains(path) ? plugin.getConfig().getDouble(path, fallback) : plugin.getConfig().getDouble(fallbackPath, fallback);
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private String fingerprint(Map<String, Object> context) {
         if (context == null || context.isEmpty()) {
             return "";
@@ -124,11 +134,13 @@ public final class ProgressionAntiAbuseService {
         private String lastFingerprint = "";
         private long repeatedIdenticalActions;
 
+        // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
         private void accept(long timestamp, double xp) {
             entries.addLast(new Entry(timestamp, xp));
             lastAcceptedAt = timestamp;
         }
 
+        // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
         private void prune(long now) {
             long cutoff = now - 3_600_000L;
             while (!entries.isEmpty() && entries.peekFirst().timestamp < cutoff) {
@@ -136,6 +148,7 @@ public final class ProgressionAntiAbuseService {
             }
         }
 
+        // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
         private double sumSince(long cutoff) {
             double sum = 0.0D;
             for (Entry entry : entries) {
@@ -146,6 +159,7 @@ public final class ProgressionAntiAbuseService {
             return sum;
         }
 
+        // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
         private long countSince(long cutoff) {
             long count = 0L;
             Iterator<Entry> iterator = entries.descendingIterator();
@@ -160,6 +174,7 @@ public final class ProgressionAntiAbuseService {
         }
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private record Entry(long timestamp, double xp) {
     }
 }

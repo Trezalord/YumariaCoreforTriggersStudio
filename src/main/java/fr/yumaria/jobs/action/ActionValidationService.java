@@ -1,5 +1,7 @@
 package fr.yumaria.jobs.action;
 
+// Repere fichier YumariaJobs: pipeline central des actions reportees par les addons (ActionValidationService).
+
 import fr.yumaria.jobs.YumariaJobsPlugin;
 import fr.yumaria.jobs.addon.DefaultYumariaAddonRegistry;
 import fr.yumaria.jobs.api.model.YumariaActionFailureReason;
@@ -17,12 +19,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+// Role YumariaJobs: Reçoit les actions des addons et les transforme en progression YumariaJobs.
 public final class ActionValidationService {
     private final YumariaJobsPlugin plugin;
     private final JobRegistry jobRegistry;
     private final PlayerDataService playerDataService;
     private final DefaultYumariaAddonRegistry addonRegistry;
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public ActionValidationService(YumariaJobsPlugin plugin, JobRegistry jobRegistry, PlayerDataService playerDataService, DefaultYumariaAddonRegistry addonRegistry) {
         this.plugin = plugin;
         this.jobRegistry = jobRegistry;
@@ -30,7 +34,9 @@ public final class ActionValidationService {
         this.addonRegistry = addonRegistry;
     }
 
+    // Annotation YumariaJobs: Verifie les conditions avant de laisser continuer le pipeline.
     public ActionValidationResult validate(YumariaActionReport report) {
+        // Validation stricte mais non destructive: on rejette proprement au lieu de faire crash un addon.
         List<String> debug = new ArrayList<>();
         if (report == null) {
             return rejected(YumariaActionFailureReason.INTERNAL_ERROR, debug, "action report is null");
@@ -49,6 +55,7 @@ public final class ActionValidationService {
             return rejected(YumariaActionFailureReason.INVALID_MONEY_AMOUNT, debug, "invalid base money amount");
         }
 
+        // Controle addon: inscription optionnelle, puis autorisation via config.
         if (plugin.getConfig().getBoolean("addons.require-registration", false) && !addonRegistry.isRegistered(report.addonId())) {
             return rejected(YumariaActionFailureReason.ADDON_NOT_REGISTERED, debug, "addon is not registered: " + report.addonId());
         }
@@ -77,6 +84,7 @@ public final class ActionValidationService {
             return rejected(YumariaActionFailureReason.ACTION_TYPE_BLOCKED, debug, "action type disabled by config");
         }
 
+        // Controle profil/metier: si le metier doit etre actif, on bloque avant le pipeline XP.
         try {
             PlayerData data = playerDataService.getOrLoad(player);
             PlayerJobData jobData = data.peekJob(profession.id());
@@ -97,6 +105,7 @@ public final class ActionValidationService {
         return new ActionValidationResult(true, YumariaActionFailureReason.NONE, player, profession, debug);
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private ActionValidationResult rejected(YumariaActionFailureReason reason, List<String> debug, String message) {
         debug.add(message);
         return new ActionValidationResult(false, reason, null, null, debug);

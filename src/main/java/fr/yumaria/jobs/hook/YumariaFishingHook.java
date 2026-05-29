@@ -1,5 +1,7 @@
 package fr.yumaria.jobs.hook;
 
+// Repere fichier YumariaJobs: integration optionnelle avec plugins externes (YumariaFishingHook).
+
 import fr.yumaria.jobs.YumariaJobsPlugin;
 import fr.yumaria.jobs.config.JobRegistry;
 import fr.yumaria.jobs.data.PlayerDataService;
@@ -49,6 +51,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+// Role YumariaJobs: Branche les integrations optionnelles sans dependance obligatoire.
 public final class YumariaFishingHook implements Listener {
     private static final String SOURCE = "yumaria_fish_catch";
     private static final long DUPLICATE_GUARD_MS = 750L;
@@ -78,6 +81,7 @@ public final class YumariaFishingHook implements Listener {
         this.progressService = progressService;
     }
 
+    // Annotation YumariaJobs: Recharge la configuration sans effacer les donnees joueur en memoire.
     public void reload() {
         shutdown();
         if (!plugin.getConfig().getBoolean("integrations.yumaria-fishing.enabled", true)) {
@@ -106,6 +110,7 @@ public final class YumariaFishingHook implements Listener {
                 + ", jobId=" + jobId());
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public void shutdown() {
         HandlerList.unregisterAll(this);
         registeredCustomEvents.clear();
@@ -131,6 +136,7 @@ public final class YumariaFishingHook implements Listener {
         return pluginPresent;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public String status() {
         return "enabled=" + enabled
                 + ", pluginPresent=" + pluginPresent
@@ -141,6 +147,7 @@ public final class YumariaFishingHook implements Listener {
     }
 
     @org.bukkit.event.EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = false)
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public void onPlayerFish(PlayerFishEvent event) {
         if (!enabled) {
             return;
@@ -182,6 +189,7 @@ public final class YumariaFishingHook implements Listener {
     }
 
     @org.bukkit.event.EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = false)
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public void onPlayerInteract(PlayerInteractEvent event) {
         if (!enabled || event.getHand() != EquipmentSlot.HAND || !isFishingRod(event.getPlayer().getInventory().getItemInMainHand())) {
             return;
@@ -195,6 +203,7 @@ public final class YumariaFishingHook implements Listener {
     }
 
     @org.bukkit.event.EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = false)
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public void onPlayerAnimation(PlayerAnimationEvent event) {
         if (!enabled || event.getAnimationType() != PlayerAnimationType.ARM_SWING || !isFishingRod(event.getPlayer().getInventory().getItemInMainHand())) {
             return;
@@ -203,12 +212,14 @@ public final class YumariaFishingHook implements Listener {
     }
 
     @org.bukkit.event.EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = false)
+    // Annotation YumariaJobs: Point d entree Bukkit appele par un evenement serveur.
     public void onQuit(PlayerQuitEvent event) {
         finishPendingCatch(event.getPlayer().getUniqueId(), "player quit");
         finishCustomCatchWatch(event.getPlayer().getUniqueId(), "player quit");
     }
 
     @org.bukkit.event.EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = false)
+    // Annotation YumariaJobs: Point d entree Bukkit appele par un evenement serveur.
     public void onEntityPickupItem(EntityPickupItemEvent event) {
         if (!enabled || !(event.getEntity() instanceof Player player)) {
             return;
@@ -234,6 +245,7 @@ public final class YumariaFishingHook implements Listener {
                 );
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public List<String> describeItem(ItemStack itemStack) {
         List<String> lines = new ArrayList<>();
         DetectionReport report = inspectItem(itemStack);
@@ -308,6 +320,7 @@ public final class YumariaFishingHook implements Listener {
         return lines;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private Optional<FishContext> contextFromItem(ItemStack itemStack) {
         return inspectItem(itemStack).context();
     }
@@ -316,6 +329,7 @@ public final class YumariaFishingHook implements Listener {
         return itemStack != null && itemStack.getType() == Material.FISHING_ROD;
     }
 
+    // Annotation YumariaJobs: Gere l affichage ou le cycle de vie d un feedback visuel.
     private void startPendingCatch(Player player, Entity caughtEntity) {
         UUID uuid = player.getUniqueId();
         finishPendingCatch(uuid, "replaced by new confirmed catch");
@@ -339,6 +353,7 @@ public final class YumariaFishingHook implements Listener {
         pendingCatch.tasks().add(expiryTask);
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private void scanPendingCatch(Player player, int attemptTick) {
         PendingCatch pendingCatch = pendingCatches.get(player.getUniqueId());
         if (pendingCatch == null || !player.isOnline()) {
@@ -375,6 +390,7 @@ public final class YumariaFishingHook implements Listener {
                 + ", attemptTick=" + attemptTick);
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private Optional<FishContext> contextFromCaughtEntity(Entity caughtEntity) {
         if (!(caughtEntity instanceof Item item)) {
             return Optional.empty();
@@ -382,6 +398,7 @@ public final class YumariaFishingHook implements Listener {
         return contextFromItem(item.getItemStack());
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private Optional<FishContext> newInventoryFishContext(Player player, Map<String, Integer> beforeCounts) {
         Map<String, Integer> currentCounts = new HashMap<>();
         Map<String, FishContext> contexts = new HashMap<>();
@@ -412,6 +429,7 @@ public final class YumariaFishingHook implements Listener {
         return Optional.empty();
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private Map<String, Integer> matchingInventoryCounts(Player player) {
         Map<String, Integer> counts = new HashMap<>();
         for (ItemStack itemStack : player.getInventory().getContents()) {
@@ -423,6 +441,7 @@ public final class YumariaFishingHook implements Listener {
         return counts;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private void finishPendingCatch(UUID uuid, String reason) {
         PendingCatch pendingCatch = pendingCatches.remove(uuid);
         if (pendingCatch == null) {
@@ -432,6 +451,7 @@ public final class YumariaFishingHook implements Listener {
         debug("Pending confirmed catch finished: uuid=" + uuid + ", reason=" + reason);
     }
 
+    // Annotation YumariaJobs: Gere l affichage ou le cycle de vie d un feedback visuel.
     private void maybeStartCustomGameWatch(Player player, String source) {
         if (!plugin.getConfig().getBoolean("integrations.yumaria-fishing.catch-watch.enabled", true)) {
             return;
@@ -478,6 +498,7 @@ public final class YumariaFishingHook implements Listener {
                 + ", beforeMatchingFish=" + watch.beforeCounts());
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private void scanCustomCatchWatch(Player player) {
         UUID uuid = player.getUniqueId();
         CustomCatchWatch watch = customCatchWatches.get(uuid);
@@ -527,6 +548,7 @@ public final class YumariaFishingHook implements Listener {
         }
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private void finishCustomCatchWatch(UUID uuid, String reason) {
         CustomCatchWatch watch = customCatchWatches.remove(uuid);
         if (watch == null) {
@@ -536,6 +558,7 @@ public final class YumariaFishingHook implements Listener {
         debug("Custom catch watch finished: uuid=" + uuid + ", reason=" + reason);
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private DetectionReport inspectItem(ItemStack itemStack) {
         if (itemStack == null || itemStack.getType().isAir() || !itemStack.hasItemMeta()) {
             return DetectionReport.empty(itemStack == null || itemStack.getType().isAir() ? "empty item" : "no item meta");
@@ -596,6 +619,7 @@ public final class YumariaFishingHook implements Listener {
         return new DetectionReport(matched, namespaceMatch, keyMatch, itemsAdderMatch, textMarkerMatch, itemsAdderId, pdcValues, reasons, context);
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private FishContext contextFromPdc(PersistentDataContainer container, String itemsAdderId) {
         String speciesId = FishContext.readString(container, "speciesId", "species_id", "species-id", "species", "fish", "fish_id", "fishid");
         if (speciesId.isBlank() && !itemsAdderId.isBlank()) {
@@ -615,11 +639,13 @@ public final class YumariaFishingHook implements Listener {
         );
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private List<String> configuredValues(String path, List<String> fallback) {
         List<String> values = plugin.getConfig().getStringList(path);
         return values.isEmpty() ? fallback : values;
     }
 
+    // Annotation YumariaJobs: Charge les donnees depuis la configuration ou le disque.
     private List<PdcValue> readPdcValues(PersistentDataContainer container) {
         List<PdcValue> values = new ArrayList<>();
         for (NamespacedKey key : container.getKeys()) {
@@ -635,6 +661,7 @@ public final class YumariaFishingHook implements Listener {
         return values;
     }
 
+    // Annotation YumariaJobs: Charge les donnees depuis la configuration ou le disque.
     private <T> T readPdc(PersistentDataContainer container, NamespacedKey key, PersistentDataType<?, T> type) {
         try {
             return container.get(key, type);
@@ -643,6 +670,7 @@ public final class YumariaFishingHook implements Listener {
         }
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private String itemsAdderId(ItemStack itemStack) {
         String apiId = itemsAdderIdFromApi(itemStack);
         if (!apiId.isBlank()) {
@@ -661,6 +689,7 @@ public final class YumariaFishingHook implements Listener {
         return "";
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private String itemsAdderIdFromApi(ItemStack itemStack) {
         if (itemStack == null || Bukkit.getPluginManager().getPlugin("ItemsAdder") == null) {
             return "";
@@ -689,6 +718,7 @@ public final class YumariaFishingHook implements Listener {
         return "";
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private boolean looksLikeYumariaFishItemsAdderId(String itemsAdderId) {
         if (itemsAdderId == null || itemsAdderId.isBlank()) {
             return false;
@@ -722,6 +752,7 @@ public final class YumariaFishingHook implements Listener {
         ).stream().map(Text::normalizeLookup).anyMatch(joined::contains);
     }
 
+    // Annotation YumariaJobs: Enregistre un element dans Bukkit ou dans le registre YumariaJobs.
     private void registerCustomCatchEvents(Plugin yumariaFishing) {
         ClassLoader loader = yumariaFishing.getClass().getClassLoader();
         for (String className : eventClassCandidates(yumariaFishing)) {
@@ -744,6 +775,7 @@ public final class YumariaFishingHook implements Listener {
         }
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private Set<String> eventClassCandidates(Plugin yumariaFishing) {
         Set<String> names = new LinkedHashSet<>();
         String basePackage = yumariaFishing.getClass().getPackageName();
@@ -777,6 +809,7 @@ public final class YumariaFishingHook implements Listener {
         return names;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private void handleCustomCatchEvent(Event event, String eventName) {
         if (!enabled) {
             return;
@@ -829,6 +862,7 @@ public final class YumariaFishingHook implements Listener {
                 || normalized.contains("ground");
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private void scanRecentInventoryFish(Player player, String detectionSource) {
         if (!enabled || player == null || !player.isOnline()) {
             return;
@@ -845,6 +879,7 @@ public final class YumariaFishingHook implements Listener {
         }
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private boolean grantProgress(Player player, FishContext context, String detectionSource) {
         String fingerprint = player.getUniqueId() + ":" + context.fingerprint();
         long now = System.currentTimeMillis();
@@ -890,6 +925,7 @@ public final class YumariaFishingHook implements Listener {
         return true;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private String rejectionReason(Player player, String configuredJobId) {
         Optional<JobDefinition> optionalJob = jobRegistry.get(configuredJobId);
         if (optionalJob.isEmpty()) {
@@ -912,6 +948,7 @@ public final class YumariaFishingHook implements Listener {
         return null;
     }
 
+    // Annotation YumariaJobs: Calcule ou interprete une valeur configurable.
     private double calculateProgress(FishContext context) {
         if (isMasteryProgressMode()) {
             Double masteryProgress = calculateMasteryProgress(context);
@@ -923,6 +960,7 @@ public final class YumariaFishingHook implements Listener {
         return calculateConfiguredProgress(context);
     }
 
+    // Annotation YumariaJobs: Calcule ou interprete une valeur configurable.
     private double calculateConfiguredProgress(FishContext context) {
         double defaultProgress = plugin.getConfig().getDouble("integrations.yumaria-fishing.progress.default", 1.0D);
         String rarity = normalizeFactor(context.rarity());
@@ -936,6 +974,7 @@ public final class YumariaFishingHook implements Listener {
         return Math.max(0.0D, rarityBase * qualityMultiplier);
     }
 
+    // Annotation YumariaJobs: Calcule ou interprete une valeur configurable.
     private Double calculateMasteryProgress(FishContext context) {
         Plugin fishingPlugin = yumariaFishingPlugin();
         if (!(fishingPlugin instanceof JavaPlugin javaPlugin)) {
@@ -980,6 +1019,7 @@ public final class YumariaFishingHook implements Listener {
         return progress;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private double configMultiplier(FileConfiguration config, String path, String key, double fallback) {
         String normalized = key == null ? "" : key.trim();
         if (normalized.isBlank()) {
@@ -998,24 +1038,29 @@ public final class YumariaFishingHook implements Listener {
                 || mode.equals("fishingmastery");
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private String progressMode() {
         return plugin.getConfig().getString("integrations.yumaria-fishing.progress.mode", "yumaria-fishing-mastery");
     }
 
+    // Annotation YumariaJobs: Formate ou normalise du texte pour affichage, commandes ou recherche.
     private String normalizeFactor(String value) {
         return value == null ? "" : value.trim().toUpperCase(Locale.ROOT);
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private String jobId() {
         return plugin.getConfig().getString("integrations.yumaria-fishing.job-id", "pecheur");
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private void debug(String message) {
         if (plugin.getConfig().getBoolean("integrations.yumaria-fishing.debug", false)) {
             plugin.getLogger().info("[YumariaFishingHook] " + message);
         }
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private Plugin yumariaFishingPlugin() {
         if (yumariaFishingPlugin != null && yumariaFishingPlugin.isEnabled()) {
             return yumariaFishingPlugin;
@@ -1027,6 +1072,7 @@ public final class YumariaFishingHook implements Listener {
         return yumariaFishingPlugin;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private YumariaFishingState yumariaFishingState(Player player) {
         Object manager = yumariaFishingGameManager();
         if (manager == null) {
@@ -1039,6 +1085,7 @@ public final class YumariaFishingHook implements Listener {
         );
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private Object yumariaFishingGameManager() {
         Plugin fishingPlugin = yumariaFishingPlugin();
         if (fishingPlugin == null) {
@@ -1047,6 +1094,7 @@ public final class YumariaFishingHook implements Listener {
         return invokeNoArg(fishingPlugin, "getFishingGameManager");
     }
 
+    // Annotation YumariaJobs: Produit une copie sure pour eviter d exposer les donnees internes mutables.
     private Optional<GameSnapshot> currentGameSnapshot(Player player) {
         Object manager = yumariaFishingGameManager();
         if (manager == null) {
@@ -1087,6 +1135,7 @@ public final class YumariaFishingHook implements Listener {
         return Optional.of(snapshot);
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private Object firstReflectionValue(Object target, String... names) {
         if (target == null) {
             return null;
@@ -1104,6 +1153,7 @@ public final class YumariaFishingHook implements Listener {
         return null;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private boolean invokeBoolean(Object target, String methodName, Player player) {
         if (target == null) {
             return false;
@@ -1119,6 +1169,7 @@ public final class YumariaFishingHook implements Listener {
         }
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private Object invokeNoArg(Object target, String methodName) {
         if (target == null) {
             return null;
@@ -1132,6 +1183,7 @@ public final class YumariaFishingHook implements Listener {
         }
     }
 
+    // Annotation YumariaJobs: Charge les donnees depuis la configuration ou le disque.
     private Object readField(Object target, String fieldName) {
         if (target == null) {
             return null;
@@ -1149,27 +1201,33 @@ public final class YumariaFishingHook implements Listener {
         return null;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private int intValue(Object value) {
         return value instanceof Number number ? number.intValue() : 0;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private String stringValue(Object value) {
         return value == null ? "" : String.valueOf(value);
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private String firstNonBlank(String first, String fallback) {
         return first == null || first.isBlank() ? fallback : first;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private double clamp(double value, double min, double max) {
         return Math.max(min, Math.min(max, value));
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private double round(double value, int decimals) {
         double scale = Math.pow(10.0D, decimals);
         return Math.round(value * scale) / scale;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private record YumariaFishingState(boolean available, boolean active, boolean hookPending) {
         private static YumariaFishingState unavailable() {
             return new YumariaFishingState(false, false, false);
@@ -1216,26 +1274,32 @@ public final class YumariaFishingHook implements Listener {
             this.graceAfterInactiveTicks = graceAfterInactiveTicks;
         }
 
+        // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
         private Map<String, Integer> beforeCounts() {
             return beforeCounts;
         }
 
+        // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
         private long maxDurationTicks() {
             return maxDurationTicks;
         }
 
+        // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
         private long graceAfterInactiveTicks() {
             return graceAfterInactiveTicks;
         }
 
+        // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
         private long elapsedTicks() {
             return elapsedTicks;
         }
 
+        // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
         private long inactiveTicks() {
             return inactiveTicks;
         }
 
+        // Annotation YumariaJobs: Produit une copie sure pour eviter d exposer les donnees internes mutables.
         private GameSnapshot lastSnapshot() {
             return lastSnapshot;
         }
@@ -1244,18 +1308,22 @@ public final class YumariaFishingHook implements Listener {
             this.task = task;
         }
 
+        // Annotation YumariaJobs: Produit une copie sure pour eviter d exposer les donnees internes mutables.
         private void setLastSnapshot(GameSnapshot lastSnapshot) {
             this.lastSnapshot = lastSnapshot;
         }
 
+        // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
         private void addElapsedTicks() {
             elapsedTicks += scanIntervalTicks;
         }
 
+        // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
         private void addInactiveTicks() {
             inactiveTicks += scanIntervalTicks;
         }
 
+        // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
         private void resetInactiveTicks() {
             inactiveTicks = 0L;
         }
@@ -1268,6 +1336,7 @@ public final class YumariaFishingHook implements Listener {
         }
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private record PendingCatch(UUID playerId, Entity caughtEntity, Map<String, Integer> beforeCounts, List<BukkitTask> tasks) {
         private PendingCatch(UUID playerId, Entity caughtEntity, Map<String, Integer> beforeCounts) {
             this(playerId, caughtEntity, Map.copyOf(beforeCounts), new ArrayList<>());
@@ -1302,6 +1371,7 @@ public final class YumariaFishingHook implements Listener {
             List<String> reasons,
             Optional<FishContext> context
     ) {
+        // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
         private static DetectionReport empty(String reason) {
             return new DetectionReport(false, false, false, false, false, "", List.of(), List.of(reason), Optional.empty());
         }
@@ -1319,6 +1389,7 @@ public final class YumariaFishingHook implements Listener {
             Double catchPerformance,
             Boolean perfectCatch
     ) {
+        // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
         private void putInto(Map<String, Object> target) {
             putIfPresent(target, "species", speciesId);
             putIfPresent(target, "species_id", speciesId);
@@ -1333,6 +1404,7 @@ public final class YumariaFishingHook implements Listener {
             putIfPresent(target, "perfect_catch", perfectCatch);
         }
 
+        // Annotation YumariaJobs: Produit une copie sure pour eviter d exposer les donnees internes mutables.
         private FishContext withGameSnapshot(GameSnapshot snapshot) {
             if (snapshot == null) {
                 return this;
@@ -1351,6 +1423,7 @@ public final class YumariaFishingHook implements Listener {
             );
         }
 
+        // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
         private String fingerprint() {
             return String.join("|",
                     value(speciesId),
@@ -1366,20 +1439,24 @@ public final class YumariaFishingHook implements Listener {
             );
         }
 
+        // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
         private static String firstNonBlank(String first, String fallback) {
             return first == null || first.isBlank() ? fallback : first;
         }
 
+        // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
         private static void putIfPresent(Map<String, Object> target, String key, Object value) {
             if (value != null && !String.valueOf(value).isBlank()) {
                 target.put(key, value);
             }
         }
 
+        // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
         private static String value(Object value) {
             return value == null ? "-" : String.valueOf(value);
         }
 
+        // Annotation YumariaJobs: Charge les donnees depuis la configuration ou le disque.
         private static String readString(PersistentDataContainer container, String... candidates) {
             for (NamespacedKey key : container.getKeys()) {
                 if (!matches(key, candidates)) {
@@ -1397,6 +1474,7 @@ public final class YumariaFishingHook implements Listener {
             return "";
         }
 
+        // Annotation YumariaJobs: Charge les donnees depuis la configuration ou le disque.
         private static Double readDouble(PersistentDataContainer container, String... candidates) {
             for (NamespacedKey key : container.getKeys()) {
                 if (!matches(key, candidates)) {
@@ -1418,6 +1496,7 @@ public final class YumariaFishingHook implements Listener {
             return null;
         }
 
+        // Annotation YumariaJobs: Charge les donnees depuis la configuration ou le disque.
         private static Object readNumericObject(PersistentDataContainer container, NamespacedKey key) {
             Double doubleValue = container.get(key, PersistentDataType.DOUBLE);
             if (doubleValue != null) {
@@ -1438,6 +1517,7 @@ public final class YumariaFishingHook implements Listener {
             return null;
         }
 
+        // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
         private static boolean matches(NamespacedKey key, String... candidates) {
             String normalizedKey = Text.normalizeLookup(key.getKey());
             for (String candidate : candidates) {
@@ -1450,9 +1530,11 @@ public final class YumariaFishingHook implements Listener {
     }
 
     private static final class ReflectionData {
+        // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
         private ReflectionData() {
         }
 
+        // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
         private static Optional<Player> player(Object source) {
             Object value = firstValue(source, List.of("getPlayer", "player", "getAngler", "angler", "getFisher", "fisher"));
             if (value instanceof Player player) {
@@ -1464,6 +1546,7 @@ public final class YumariaFishingHook implements Listener {
             return Optional.empty();
         }
 
+        // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
         private static FishContext context(Object event, YumariaFishingHook hook) {
             ItemStack itemStack = itemStack(event);
             Optional<FishContext> itemContext = hook.contextFromItem(itemStack);
@@ -1495,6 +1578,7 @@ public final class YumariaFishingHook implements Listener {
             return new FishContext(speciesId, rarity, quality, category, sizeCm, weightKg, baseValue, "", null, null);
         }
 
+        // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
         private static String catchSignal(Object event) {
             Object value = firstValue(event, List.of(
                     "getState",
@@ -1517,6 +1601,7 @@ public final class YumariaFishingHook implements Listener {
             return value == null ? "" : String.valueOf(value);
         }
 
+        // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
         private static ItemStack itemStack(Object source) {
             Object value = firstValue(source, List.of("getItemStack", "itemStack", "getItem", "item", "getRewardItem", "rewardItem"));
             if (value instanceof ItemStack itemStack) {
@@ -1528,6 +1613,7 @@ public final class YumariaFishingHook implements Listener {
             return null;
         }
 
+        // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
         private static String firstString(Object event, Object fishObject, String... names) {
             Object value = firstValue(event, List.of(names));
             if (isBlank(value) && fishObject != null) {
@@ -1536,6 +1622,7 @@ public final class YumariaFishingHook implements Listener {
             return value == null ? "" : String.valueOf(value);
         }
 
+        // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
         private static Double firstDouble(Object event, Object fishObject, String... names) {
             Object value = firstValue(event, List.of(names));
             if (value == null && fishObject != null) {
@@ -1554,6 +1641,7 @@ public final class YumariaFishingHook implements Listener {
             return null;
         }
 
+        // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
         private static Object firstValue(Object source, List<String> names) {
             if (source == null) {
                 return null;
@@ -1571,6 +1659,7 @@ public final class YumariaFishingHook implements Listener {
             return null;
         }
 
+        // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
         private static Object invokeNoArg(Object source, String methodName) {
             try {
                 Method method = source.getClass().getMethod(methodName);
@@ -1581,6 +1670,7 @@ public final class YumariaFishingHook implements Listener {
             }
         }
 
+        // Annotation YumariaJobs: Charge les donnees depuis la configuration ou le disque.
         private static Object readField(Object source, String fieldName) {
             try {
                 Field field = source.getClass().getDeclaredField(fieldName);
@@ -1595,6 +1685,7 @@ public final class YumariaFishingHook implements Listener {
             return value == null || String.valueOf(value).isBlank();
         }
 
+        // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
         private static String firstNonBlank(String first, String second) {
             return first == null || first.isBlank() ? second : first;
         }

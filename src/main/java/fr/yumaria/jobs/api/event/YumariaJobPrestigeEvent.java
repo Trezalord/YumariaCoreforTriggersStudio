@@ -1,10 +1,13 @@
 package fr.yumaria.jobs.api.event;
 
+// Repere fichier YumariaJobs: evenement public expose aux autres plugins (YumariaJobPrestigeEvent).
+
 import org.bukkit.entity.Player;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 
+// Role YumariaJobs: Expose un evenement Bukkit public pour les plugins externes.
 public final class YumariaJobPrestigeEvent extends Event implements Cancellable {
     private static final HandlerList HANDLERS = new HandlerList();
 
@@ -14,6 +17,7 @@ public final class YumariaJobPrestigeEvent extends Event implements Cancellable 
     private final int newPrestige;
     private boolean cancelled;
 
+    // Annotation YumariaJobs: Gere la logique de prestige et ses conditions.
     public YumariaJobPrestigeEvent(Player player, String jobId, int oldPrestige, int newPrestige) {
         this.player = player;
         this.jobId = jobId;
@@ -38,10 +42,12 @@ public final class YumariaJobPrestigeEvent extends Event implements Cancellable 
         return jobId;
     }
 
+    // Annotation YumariaJobs: Gere la logique de prestige et ses conditions.
     public int getOldPrestige() {
         return oldPrestige;
     }
 
+    // Annotation YumariaJobs: Gere la logique de prestige et ses conditions.
     public int getNewPrestige() {
         return newPrestige;
     }

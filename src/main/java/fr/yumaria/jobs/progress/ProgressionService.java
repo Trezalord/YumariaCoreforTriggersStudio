@@ -1,5 +1,7 @@
 package fr.yumaria.jobs.progress;
 
+// Repere fichier YumariaJobs: progression, niveaux et feedback visuel (ProgressionService).
+
 import fr.yumaria.jobs.YumariaJobsPlugin;
 import fr.yumaria.jobs.data.PlayerJobData;
 import fr.yumaria.jobs.job.JobDefinition;
@@ -8,14 +10,17 @@ import fr.yumaria.jobs.util.ExpressionEvaluator;
 import java.util.HashMap;
 import java.util.Map;
 
+// Role YumariaJobs: Gere XP, niveaux, prestige et feedback visuel de progression.
 public final class ProgressionService {
     private final YumariaJobsPlugin plugin;
     private final ExpressionEvaluator evaluator = new ExpressionEvaluator();
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public ProgressionService(YumariaJobsPlugin plugin) {
         this.plugin = plugin;
     }
 
+    // Annotation YumariaJobs: Calcule ou interprete une valeur configurable.
     public double requiredProgress(JobDefinition job, PlayerJobData data) {
         Map<String, Double> variables = variables(job, data, 0.0D);
         double base = evaluator.evaluate(job.requiredProgressExpression(), variables, 1.0D);
@@ -26,14 +31,17 @@ public final class ProgressionService {
         return Math.max(1.0D, base);
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public double pointsRewarded(JobDefinition job, PlayerJobData data) {
         return Math.max(0.0D, evaluator.evaluate(job.pointsRewardedExpression(), variables(job, data, requiredProgress(job, data)), 0.0D));
     }
 
+    // Annotation YumariaJobs: Gere la partie argent en passant par la couche economie centrale.
     public double evaluateMoney(String expression, JobDefinition job, PlayerJobData data) {
         return Math.max(0.0D, evaluator.evaluate(expression, variables(job, data, requiredProgress(job, data)), 0.0D));
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public Map<String, Double> variables(JobDefinition job, PlayerJobData data, double requiredProgress) {
         Map<String, Double> variables = new HashMap<>();
         variables.put("level", (double) data.getLevel());

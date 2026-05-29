@@ -1,5 +1,7 @@
 package fr.yumaria.jobs;
 
+// Repere fichier YumariaJobs: classe principale du plugin (YumariaJobsPlugin).
+
 import fr.yumaria.jobs.api.YumariaJobsAPI;
 import fr.yumaria.jobs.action.ActionAntiAbuseService;
 import fr.yumaria.jobs.action.ActionEconomyService;
@@ -42,6 +44,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.util.ArrayList;
 import java.util.List;
 
+// Role YumariaJobs: Point central du plugin Paper YumariaJobs.
 public final class YumariaJobsPlugin extends JavaPlugin {
     private JobRegistry jobRegistry;
     private LanguageService languageService;
@@ -67,9 +70,11 @@ public final class YumariaJobsPlugin extends JavaPlugin {
     private final List<String> registeredListeners = new ArrayList<>();
 
     @Override
+    // Annotation YumariaJobs: Activation Paper: initialise services, configs, commandes, listeners et API.
     public void onEnable() {
         saveDefaultConfig();
 
+        // Initialise tous les services coeur de YumariaJobs avant d'exposer l'API publique.
         jobRegistry = new JobRegistry(this);
         languageService = new LanguageService(this);
         rankService = new RankService(this);
@@ -87,7 +92,11 @@ public final class YumariaJobsPlugin extends JavaPlugin {
         bossBarManager = new BossBarManager(this);
         progressBarService = new ProgressBarService(this, progressionService, rankService, progressFormatter, bossBarManager);
         playerJobService = new PlayerJobService(this, playerDataService);
+
+        // Moteur XP historique: tout gain de progression doit finir ici pour garder niveaux, rewards et bossbar.
         jobProgressService = new JobProgressService(this, jobRegistry, playerDataService, progressionService, rewardService, progressBarService, languageService);
+
+        // Nouveau coeur MMORPG: les addons reportent leurs actions ici, puis YumariaJobs decide XP, argent et stats.
         actionService = new DefaultYumariaActionService(
                 this,
                 new ActionValidationService(this, jobRegistry, playerDataService, addonRegistry),
@@ -99,9 +108,12 @@ public final class YumariaJobsPlugin extends JavaPlugin {
                 jobProgressService
         );
         jobProgressService.setCoreServices(actionService, economyApiService, addonRegistry);
+
+        // Hook legacy de compatibilite. L'architecture cible est que YumariaFishing appelle directement l'API actions().
         yumariaFishingHook = new YumariaFishingHook(this, jobRegistry, playerDataService, jobProgressService);
         guiService = new JobGuiService(this, jobRegistry, playerDataService, playerJobService, placeholderService, itemsAdderIconService, languageService);
 
+        // Charge les configs, commandes, listeners, bossbar et publie YumariaJobsAPI pour les autres plugins.
         reloadPlugin(false);
         registerCommands();
         registerListeners();
@@ -114,6 +126,7 @@ public final class YumariaJobsPlugin extends JavaPlugin {
     }
 
     @Override
+    // Annotation YumariaJobs: Extinction Paper: annule les taches et sauvegarde proprement les profils.
     public void onDisable() {
         if (autosaveTaskId != -1) {
             Bukkit.getScheduler().cancelTask(autosaveTaskId);
@@ -133,11 +146,14 @@ public final class YumariaJobsPlugin extends JavaPlugin {
         }
     }
 
+    // Annotation YumariaJobs: Recharge la configuration sans effacer les donnees joueur en memoire.
     public void reloadPlugin() {
         reloadPlugin(true);
     }
 
+    // Annotation YumariaJobs: Recharge la configuration sans effacer les donnees joueur en memoire.
     public void reloadPlugin(boolean refreshGuis) {
+        // Recharge uniquement les configs/services, jamais les donnees joueur deja en memoire.
         reloadConfig();
         languageService.reload();
         rankService.reload();
@@ -151,32 +167,39 @@ public final class YumariaJobsPlugin extends JavaPlugin {
         }
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public void debug(String message) {
         debug("jobs", message);
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public void debug(String category, String message) {
         if (debugEnabled(category)) {
             getLogger().info("[debug] " + message);
         }
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public void debugProgress(String message) {
         debug("progress", message);
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public void debugListeners(String message) {
         debug("listeners", message);
     }
 
+    // Annotation YumariaJobs: Gere l affichage ou le cycle de vie d un feedback visuel.
     public void debugBossbar(String message) {
         debug("bossbar", message);
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public void debugJobs(String message) {
         debug("jobs", message);
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public boolean debugEnabled(String category) {
         if (getConfig().isBoolean("debug")) {
             return getConfig().getBoolean("debug", false);
@@ -185,7 +208,9 @@ public final class YumariaJobsPlugin extends JavaPlugin {
                 && (getConfig().getBoolean("debug." + category, false) || getConfig().getBoolean("debug.all", false));
     }
 
+    // Annotation YumariaJobs: Enregistre un element dans Bukkit ou dans le registre YumariaJobs.
     private void registerCommands() {
+        // Commandes joueur/admin principales: /jobs, /prestige et /yjobs.
         registeredCommands.clear();
         JobsCommand jobsCommand = new JobsCommand(jobRegistry, playerDataService, playerJobService, progressionService, rankService, guiService, languageService);
         registerCommand("jobs", jobsCommand, jobsCommand);
@@ -201,7 +226,9 @@ public final class YumariaJobsPlugin extends JavaPlugin {
         registerCommand("yjobs", yJobsCommand, yJobsCommand);
     }
 
+    // Annotation YumariaJobs: Enregistre un element dans Bukkit ou dans le registre YumariaJobs.
     private void registerListeners() {
+        // Listeners internes vanilla et GUI. Les addons externes doivent plutot passer par YumariaJobsAPI.
         registeredListeners.clear();
         Bukkit.getPluginManager().registerEvents(new PlayerDataListener(playerDataService, progressBarService), this);
         registeredListeners.add("PlayerDataListener");
@@ -211,6 +238,7 @@ public final class YumariaJobsPlugin extends JavaPlugin {
         registeredListeners.add("JobGuiService");
     }
 
+    // Annotation YumariaJobs: Enregistre un element dans Bukkit ou dans le registre YumariaJobs.
     private void registerCommand(String name, CommandExecutor executor, TabCompleter tabCompleter) {
         PluginCommand command = getCommand(name);
         if (command == null) {
@@ -222,6 +250,7 @@ public final class YumariaJobsPlugin extends JavaPlugin {
         registeredCommands.add(name);
     }
 
+    // Annotation YumariaJobs: Enregistre un element dans Bukkit ou dans le registre YumariaJobs.
     private void registerPlaceholderApi() {
         if (!getConfig().getBoolean("hooks.placeholderapi.enabled", true)) {
             return;
@@ -234,6 +263,7 @@ public final class YumariaJobsPlugin extends JavaPlugin {
         debug("PlaceholderAPI expansion registered.");
     }
 
+    // Annotation YumariaJobs: Prepare ou execute la sauvegarde des donnees sans bloquer inutilement le serveur.
     private void restartAutosave() {
         if (autosaveTaskId != -1) {
             Bukkit.getScheduler().cancelTask(autosaveTaskId);
@@ -242,7 +272,9 @@ public final class YumariaJobsPlugin extends JavaPlugin {
         autosaveTaskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(this, playerDataService::saveDirtyAsync, intervalSeconds * 20L, intervalSeconds * 20L);
     }
 
+    // Annotation YumariaJobs: Gere l affichage ou le cycle de vie d un feedback visuel.
     private void logStartupDiagnostics() {
+        // Logs de demarrage disponibles quand debug.jobs / debug.bossbar sont actifs.
         debugJobs("Startup services: jobProgressService=" + (jobProgressService != null)
                 + ", progressBarService=" + (progressBarService != null)
                 + ", bossBarManager=" + (bossBarManager != null)

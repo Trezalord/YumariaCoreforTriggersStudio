@@ -1,5 +1,7 @@
 package fr.yumaria.jobs.api.event;
 
+// Repere fichier YumariaJobs: evenement public expose aux autres plugins (YumariaProfessionXpGainEvent).
+
 import org.bukkit.entity.Player;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
@@ -7,6 +9,7 @@ import org.bukkit.event.HandlerList;
 
 import java.util.Map;
 
+// Role YumariaJobs: Expose un evenement Bukkit public pour les plugins externes.
 public final class YumariaProfessionXpGainEvent extends Event implements Cancellable {
     private static final HandlerList HANDLERS = new HandlerList();
 
@@ -19,6 +22,7 @@ public final class YumariaProfessionXpGainEvent extends Event implements Cancell
     private boolean cancelled;
     private double finalXp;
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public YumariaProfessionXpGainEvent(Player player, String addonId, String professionId, String actionType, double baseXp, double finalXp, Map<String, Object> context) {
         this.player = player;
         this.addonId = addonId == null ? "" : addonId;

@@ -1,5 +1,7 @@
 package fr.yumaria.jobs.progress;
 
+// Repere fichier YumariaJobs: progression, niveaux et feedback visuel (JobProgressService).
+
 import fr.yumaria.jobs.YumariaJobsPlugin;
 import fr.yumaria.jobs.anticheat.AntiAbuseResult;
 import fr.yumaria.jobs.anticheat.ProgressionAntiAbuseService;
@@ -47,6 +49,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+// Role YumariaJobs: Gere XP, niveaux, prestige et feedback visuel de progression.
 public final class JobProgressService implements YumariaJobsProvider, JobXpService, PrestigeService {
     public enum PrestigeResult {
         SUCCESS,
@@ -106,46 +109,55 @@ public final class JobProgressService implements YumariaJobsProvider, JobXpServi
     }
 
     @Override
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public YumariaActionService actions() {
         return actionService;
     }
 
     @Override
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public JobXpService xp() {
         return this;
     }
 
     @Override
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public PlayerProfileService profiles() {
         return playerDataService;
     }
 
     @Override
+    // Annotation YumariaJobs: Gere la partie argent en passant par la couche economie centrale.
     public YumariaEconomyService economy() {
         return economyApiService;
     }
 
     @Override
+    // Annotation YumariaJobs: Gere la logique de prestige et ses conditions.
     public PrestigeService prestiges() {
         return this;
     }
 
     @Override
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public JobStatsService stats() {
         return playerDataService;
     }
 
     @Override
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public fr.yumaria.jobs.api.RewardService rewards() {
         return rewardService;
     }
 
     @Override
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public YumariaAddonRegistry addons() {
         return addonRegistry;
     }
 
     @Override
+    // Annotation YumariaJobs: Ajoute de la progression via le chemin XP officiel du plugin.
     public void addProgress(Player player, String jobId, double amount, String source, Map<String, Object> context) {
         Map<String, Object> safeContext = sanitizeContext(context);
         if (!Bukkit.isPrimaryThread()) {
@@ -167,6 +179,7 @@ public final class JobProgressService implements YumariaJobsProvider, JobXpServi
     }
 
     @Override
+    // Annotation YumariaJobs: Ajoute de la progression via le chemin XP officiel du plugin.
     public ProgressionResult giveXp(Player player, String jobId, double amount, String source) {
         return giveXp(JobXpRequest.builder()
                 .player(player)
@@ -177,6 +190,7 @@ public final class JobProgressService implements YumariaJobsProvider, JobXpServi
     }
 
     @Override
+    // Annotation YumariaJobs: Ajoute de la progression via le chemin XP officiel du plugin.
     public ProgressionResult giveXp(UUID playerId, String jobId, double amount, String source) {
         Player player = playerId == null ? null : Bukkit.getPlayer(playerId);
         return giveXp(JobXpRequest.builder()
@@ -189,7 +203,9 @@ public final class JobProgressService implements YumariaJobsProvider, JobXpServi
     }
 
     @Override
+    // Annotation YumariaJobs: Ajoute de la progression via le chemin XP officiel du plugin.
     public ProgressionResult giveXp(JobXpRequest request) {
+        // Point d'entree public XP: toujours rester sur le thread principal Bukkit.
         if (request == null) {
             return ProgressionResult.failure(ProgressionFailureReason.INTERNAL_ERROR, "", 0.0D, "request is null");
         }
@@ -199,7 +215,9 @@ public final class JobProgressService implements YumariaJobsProvider, JobXpServi
         return applyXp(request);
     }
 
+    // Annotation YumariaJobs: Applique un calcul, une recompense ou une etape du pipeline.
     private ProgressionResult applyXp(JobXpRequest request) {
+        // Pipeline XP metier: validation, multiplicateurs, events, anti-abuse, ajout et bossbar.
         List<String> debugMessages = new ArrayList<>();
         Map<String, Object> safeContext = sanitizeContext(request.context());
         Player player = request.playerId() == null ? null : Bukkit.getPlayer(request.playerId());
@@ -235,6 +253,7 @@ public final class JobProgressService implements YumariaJobsProvider, JobXpServi
 
         PlayerJobData jobData = data.peekJob(job.id());
         if (jobData == null || !jobData.isJoined()) {
+            // Par defaut, un joueur doit avoir rejoint le metier avant de gagner de l'XP.
             if (!plugin.getConfig().getBoolean("progress.auto-join-on-progress", false)) {
                 return failure(ProgressionFailureReason.JOB_NOT_ACTIVE, request, debugMessages, "player has not joined job " + job.id());
             }
@@ -269,6 +288,7 @@ public final class JobProgressService implements YumariaJobsProvider, JobXpServi
             debugMessages.add("action " + normalizedSource + " multiplier=" + action.progress());
         }
 
+        // Multiplicateurs de progression: action configuree, source, prestige, permissions, events.
         XpModifierPipeline.XpCalculation calculation = modifierPipeline.apply(new XpModifierContext(
                 player,
                 job,
@@ -280,6 +300,7 @@ public final class JobProgressService implements YumariaJobsProvider, JobXpServi
         debugMessages.addAll(calculation.debugMessages());
         double finalXp = calculation.finalXp();
 
+        // Evenement moderne cancellable avant l'application de l'XP.
         YumariaJobXpGainEvent xpEvent = new YumariaJobXpGainEvent(player, job.id(), request.baseAmount(), finalXp, normalizedSource, safeContext);
         Bukkit.getPluginManager().callEvent(xpEvent);
         if (xpEvent.isCancelled() || xpEvent.getFinalXp() <= 0.0D) {
@@ -294,6 +315,7 @@ public final class JobProgressService implements YumariaJobsProvider, JobXpServi
         }
         finalXp = legacyEvent.getAmount();
 
+        // Anti-abuse metier/source: cooldowns, limites par minute/heure, diminishing returns.
         AntiAbuseResult antiAbuse = antiAbuseService.validate(player.getUniqueId(), job.id(), normalizedSource, finalXp, safeContext);
         debugMessages.addAll(antiAbuse.debugMessages());
         if (!antiAbuse.accepted()) {
@@ -304,8 +326,11 @@ public final class JobProgressService implements YumariaJobsProvider, JobXpServi
             return failure(ProgressionFailureReason.ANTI_ABUSE_REJECTED, request, debugMessages, "anti-abuse reduced XP to zero");
         }
 
+        // Application reelle de l'XP dans le profil joueur.
         jobData.addProgress(finalXp);
         jobData.recordAction(normalizedSource, finalXp, System.currentTimeMillis());
+
+        // Gestion des level-ups multiples si un seul gain donne assez d'XP.
         LevelUpOutcome levelUpOutcome = handleLevelUps(player, job, jobData);
         double required = progressionService.requiredProgress(job, jobData);
         if (jobData.getLevel() >= job.maxLevel() && jobData.getProgress() > required) {
@@ -324,6 +349,7 @@ public final class JobProgressService implements YumariaJobsProvider, JobXpServi
                 + ", oldRequired=" + Text.formatNumber(oldRequired)
                 + ", required=" + Text.formatNumber(required));
 
+        // Feedback visuel event-driven: c'est ici que le bossbar de progression est demande.
         progressBarService.showProgress(player, job, jobData);
         playerDataService.markDirty(data);
         return ProgressionResult.builder(job.id())
@@ -337,6 +363,7 @@ public final class JobProgressService implements YumariaJobsProvider, JobXpServi
                 .build();
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private ProgressionResult failure(ProgressionFailureReason reason, JobXpRequest request, List<String> debugMessages, String message) {
         debugMessages.add(message);
         plugin.debugProgress("giveXp rejected: player=" + request.playerName()
@@ -353,6 +380,7 @@ public final class JobProgressService implements YumariaJobsProvider, JobXpServi
                 .build();
     }
 
+    // Annotation YumariaJobs: Gere la logique de prestige et ses conditions.
     public PrestigeResult prestige(Player player, String jobId) {
         Optional<JobDefinition> optionalJob = jobRegistry.get(jobId);
         if (optionalJob.isEmpty()) {
@@ -399,6 +427,7 @@ public final class JobProgressService implements YumariaJobsProvider, JobXpServi
     }
 
     @Override
+    // Annotation YumariaJobs: Applique un calcul, une recompense ou une etape du pipeline.
     public ProgressionResult applyPrestige(Player player, String jobId) {
         if (player == null) {
             return ProgressionResult.failure(ProgressionFailureReason.PLAYER_NOT_FOUND, jobId, 0.0D, "player is null");
@@ -419,11 +448,13 @@ public final class JobProgressService implements YumariaJobsProvider, JobXpServi
     }
 
     @Override
+    // Annotation YumariaJobs: Applique un calcul, une recompense ou une etape du pipeline.
     public ProgressionResult applyPrestige(UUID playerId, String jobId) {
         Player player = playerId == null ? null : Bukkit.getPlayer(playerId);
         return applyPrestige(player, jobId);
     }
 
+    // Annotation YumariaJobs: Gere la logique de prestige et ses conditions.
     private ProgressionFailureReason mapPrestigeFailure(PrestigeResult result) {
         return switch (result) {
             case DISABLED -> ProgressionFailureReason.XP_DISABLED;
@@ -445,6 +476,7 @@ public final class JobProgressService implements YumariaJobsProvider, JobXpServi
     }
 
     @Override
+    // Annotation YumariaJobs: Calcule ou interprete une valeur configurable.
     public double getRequiredProgress(Player player, String jobId) {
         Optional<JobDefinition> optionalJob = jobRegistry.get(jobId);
         if (optionalJob.isEmpty()) {
@@ -459,6 +491,7 @@ public final class JobProgressService implements YumariaJobsProvider, JobXpServi
     }
 
     @Override
+    // Annotation YumariaJobs: Gere la logique de prestige et ses conditions.
     public int getPrestige(Player player, String jobId) {
         return withJobData(player, jobId, PlayerJobData::getPrestige, 0);
     }
@@ -473,7 +506,9 @@ public final class JobProgressService implements YumariaJobsProvider, JobXpServi
         return withJobData(player, jobId, PlayerJobData::isActive, false);
     }
 
+    // Annotation YumariaJobs: Controle les montees de niveau et les recompenses associees.
     private LevelUpOutcome handleLevelUps(Player player, JobDefinition job, PlayerJobData jobData) {
+        // Boucle protegee: permet plusieurs niveaux d'un coup sans risque de boucle infinie.
         int guard = 0;
         List<RewardResult> rewards = new ArrayList<>();
         while (jobData.getLevel() < job.maxLevel() && guard++ < 1000) {
@@ -514,6 +549,7 @@ public final class JobProgressService implements YumariaJobsProvider, JobXpServi
         return false;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private Map<String, Object> sanitizeContext(Map<String, Object> context) {
         if (context == null || context.isEmpty()) {
             return Map.of();
@@ -527,6 +563,7 @@ public final class JobProgressService implements YumariaJobsProvider, JobXpServi
         return Map.copyOf(sanitized);
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private <T> T withJobData(Player player, String jobId, java.util.function.Function<PlayerJobData, T> function, T fallback) {
         Optional<JobDefinition> optionalJob = jobRegistry.get(jobId);
         if (optionalJob.isEmpty()) {
@@ -540,6 +577,7 @@ public final class JobProgressService implements YumariaJobsProvider, JobXpServi
         return function.apply(data);
     }
 
+    // Annotation YumariaJobs: Controle les montees de niveau et les recompenses associees.
     private record LevelUpOutcome(List<RewardResult> rewards) {
         private LevelUpOutcome {
             rewards = List.copyOf(rewards);

@@ -1,5 +1,7 @@
 package fr.yumaria.jobs.hook;
 
+// Repere fichier YumariaJobs: integration optionnelle avec plugins externes (YumariaJobsPlaceholderExpansion).
+
 import fr.yumaria.jobs.config.JobRegistry;
 import fr.yumaria.jobs.config.RankService;
 import fr.yumaria.jobs.data.PlayerData;
@@ -17,6 +19,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 
+// Role YumariaJobs: Branche les integrations optionnelles sans dependance obligatoire.
 public final class YumariaJobsPlaceholderExpansion extends PlaceholderExpansion {
     private static final List<String> SUFFIXES = List.of(
             "percentage_progress",
@@ -65,11 +68,13 @@ public final class YumariaJobsPlaceholderExpansion extends PlaceholderExpansion 
     }
 
     @Override
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public boolean persist() {
         return true;
     }
 
     @Override
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public String onRequest(OfflinePlayer player, @NotNull String params) {
         if (player == null) {
             return "";
@@ -107,6 +112,7 @@ public final class YumariaJobsPlaceholderExpansion extends PlaceholderExpansion 
         };
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private String activeJobs(PlayerData data) {
         return data.jobs().entrySet().stream()
                 .filter(entry -> entry.getValue().isJoined() && entry.getValue().isActive())
@@ -116,6 +122,7 @@ public final class YumariaJobsPlaceholderExpansion extends PlaceholderExpansion 
                 .orElse("");
     }
 
+    // Annotation YumariaJobs: Calcule ou interprete une valeur configurable.
     private PlaceholderRequest parse(String params) {
         for (String suffix : SUFFIXES) {
             String token = "_" + suffix;
@@ -129,6 +136,7 @@ public final class YumariaJobsPlaceholderExpansion extends PlaceholderExpansion 
         return null;
     }
 
+    // Annotation YumariaJobs: Formate ou normalise du texte pour affichage, commandes ou recherche.
     private record PlaceholderRequest(String jobId, String field) {
     }
 }

@@ -1,5 +1,7 @@
 package fr.yumaria.jobs.job;
 
+// Repere fichier YumariaJobs: definition et logique metier configurable (JobPlaceholderService).
+
 import fr.yumaria.jobs.YumariaJobsPlugin;
 import fr.yumaria.jobs.config.RankService;
 import fr.yumaria.jobs.data.PlayerJobData;
@@ -10,17 +12,20 @@ import org.bukkit.entity.Player;
 import java.util.HashMap;
 import java.util.Map;
 
+// Role YumariaJobs: Represente les metiers, actions, rangs et placeholders associes.
 public final class JobPlaceholderService {
     private final YumariaJobsPlugin plugin;
     private final ProgressionService progressionService;
     private final RankService rankService;
 
+    // Annotation YumariaJobs: Formate ou normalise du texte pour affichage, commandes ou recherche.
     public JobPlaceholderService(YumariaJobsPlugin plugin, ProgressionService progressionService, RankService rankService) {
         this.plugin = plugin;
         this.progressionService = progressionService;
         this.rankService = rankService;
     }
 
+    // Annotation YumariaJobs: Formate ou normalise du texte pour affichage, commandes ou recherche.
     public Map<String, String> placeholders(Player player, JobDefinition job, PlayerJobData data) {
         double required = progressionService.requiredProgress(job, data);
         double percentValue = required <= 0.0D ? 0.0D : Math.max(0.0D, Math.min(100.0D, (data.getProgress() / required) * 100.0D));
@@ -48,6 +53,7 @@ public final class JobPlaceholderService {
         return placeholders;
     }
 
+    // Annotation YumariaJobs: Gere l affichage ou le cycle de vie d un feedback visuel.
     public String textProgressBar(double progress, double required) {
         String basePath = plugin.getConfig().isConfigurationSection("progress-bar.text-progress-bar")
                 ? "progress-bar.text-progress-bar"

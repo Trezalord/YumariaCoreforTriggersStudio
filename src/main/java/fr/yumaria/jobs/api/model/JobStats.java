@@ -1,7 +1,10 @@
 package fr.yumaria.jobs.api.model;
 
+// Repere fichier YumariaJobs: modele public immuable utilise par l API (JobStats).
+
 import java.util.Map;
 
+// Role YumariaJobs: Transporte des donnees API immuables entre plugins et services.
 public final class JobStats {
     private final String jobId;
     private final double totalXp;
@@ -50,42 +53,52 @@ public final class JobStats {
         this.actionTypeActions = Map.copyOf(actionTypeActions);
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public String jobId() {
         return jobId;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public double totalXp() {
         return totalXp;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public long totalActions() {
         return totalActions;
     }
 
+    // Annotation YumariaJobs: Controle les montees de niveau et les recompenses associees.
     public long levelUps() {
         return levelUps;
     }
 
+    // Annotation YumariaJobs: Gere la logique de prestige et ses conditions.
     public long prestiges() {
         return prestiges;
     }
 
+    // Annotation YumariaJobs: Gere la partie argent en passant par la couche economie centrale.
     public double totalMoney() {
         return totalMoney;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public Map<String, Double> sourceXp() {
         return sourceXp;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public Map<String, Integer> sourceActions() {
         return sourceActions;
     }
 
+    // Annotation YumariaJobs: Gere la partie argent en passant par la couche economie centrale.
     public Map<String, Double> sourceMoney() {
         return sourceMoney;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public Map<String, Integer> actionTypeActions() {
         return actionTypeActions;
     }

@@ -1,15 +1,20 @@
 package fr.yumaria.jobs.action;
 
+// Repere fichier YumariaJobs: pipeline central des actions reportees par les addons (ActionModifierPipeline).
+
 import java.util.ArrayList;
 import java.util.List;
 
+// Role YumariaJobs: Reçoit les actions des addons et les transforme en progression YumariaJobs.
 public final class ActionModifierPipeline {
     private final List<ActionModifier> modifiers;
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public ActionModifierPipeline(List<ActionModifier> modifiers) {
         this.modifiers = List.copyOf(modifiers);
     }
 
+    // Annotation YumariaJobs: Applique un calcul, une recompense ou une etape du pipeline.
     public ActionModifierCalculation apply(ActionModifierContext context) {
         double xpMultiplier = 1.0D;
         double moneyMultiplier = 1.0D;

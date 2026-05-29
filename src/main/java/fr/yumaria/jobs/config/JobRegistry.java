@@ -1,5 +1,7 @@
 package fr.yumaria.jobs.config;
 
+// Repere fichier YumariaJobs: chargement et lecture des fichiers de configuration (JobRegistry).
+
 import fr.yumaria.jobs.YumariaJobsPlugin;
 import fr.yumaria.jobs.job.IconDefinition;
 import fr.yumaria.jobs.job.JobActionDefinition;
@@ -20,14 +22,17 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
 
+// Role YumariaJobs: Charge les fichiers YAML et resout les definitions configurables.
 public final class JobRegistry {
     private final YumariaJobsPlugin plugin;
     private Map<String, JobDefinition> jobs = Map.of();
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public JobRegistry(YumariaJobsPlugin plugin) {
         this.plugin = plugin;
     }
 
+    // Annotation YumariaJobs: Recharge la configuration sans effacer les donnees joueur en memoire.
     public void reload() {
         saveDefaultJobs();
         Map<String, JobDefinition> loaded = new HashMap<>();
@@ -63,14 +68,17 @@ public final class JobRegistry {
         return Optional.empty();
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public Collection<JobDefinition> all() {
         return jobs.values();
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public boolean exists(String id) {
         return jobs.containsKey(Text.normalizeId(id));
     }
 
+    // Annotation YumariaJobs: Prepare ou execute la sauvegarde des donnees sans bloquer inutilement le serveur.
     private void saveDefaultJobs() {
         File target = new File(plugin.getDataFolder(), "jobs.yml");
         if (!target.isFile()) {
@@ -78,6 +86,7 @@ public final class JobRegistry {
         }
     }
 
+    // Annotation YumariaJobs: Charge les donnees depuis la configuration ou le disque.
     private void loadFile(File file, Map<String, JobDefinition> target) {
         if (!file.isFile()) {
             return;
@@ -103,6 +112,7 @@ public final class JobRegistry {
         }
     }
 
+    // Annotation YumariaJobs: Calcule ou interprete une valeur configurable.
     private JobDefinition parseJob(String id, ConfigurationSection section) {
         if (section == null) {
             return null;
@@ -136,6 +146,7 @@ public final class JobRegistry {
         );
     }
 
+    // Annotation YumariaJobs: Calcule ou interprete une valeur configurable.
     private Map<String, JobActionDefinition> parseActions(ConfigurationSection section) {
         Map<String, JobActionDefinition> actions = new HashMap<>();
         if (section == null) {
@@ -155,6 +166,7 @@ public final class JobRegistry {
         return actions;
     }
 
+    // Annotation YumariaJobs: Calcule ou interprete une valeur configurable.
     private Map<String, JobSourceDefinition> parseSources(ConfigurationSection section) {
         Map<String, JobSourceDefinition> sources = new HashMap<>();
         if (section == null) {
@@ -173,6 +185,7 @@ public final class JobRegistry {
         return sources;
     }
 
+    // Annotation YumariaJobs: Calcule ou interprete une valeur configurable.
     private Map<Integer, RewardDefinition> parseLevelRewards(ConfigurationSection section) {
         Map<Integer, RewardDefinition> rewards = new TreeMap<>();
         if (section == null) {
@@ -188,6 +201,7 @@ public final class JobRegistry {
         return rewards;
     }
 
+    // Annotation YumariaJobs: Calcule ou interprete une valeur configurable.
     private RewardDefinition parseReward(ConfigurationSection section) {
         if (section == null) {
             return RewardDefinition.empty();

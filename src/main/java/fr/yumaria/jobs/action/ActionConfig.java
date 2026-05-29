@@ -1,9 +1,13 @@
 package fr.yumaria.jobs.action;
 
+// Repere fichier YumariaJobs: pipeline central des actions reportees par les addons (ActionConfig).
+
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 
+// Role YumariaJobs: Reçoit les actions des addons et les transforme en progression YumariaJobs.
 final class ActionConfig {
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private ActionConfig() {
     }
 

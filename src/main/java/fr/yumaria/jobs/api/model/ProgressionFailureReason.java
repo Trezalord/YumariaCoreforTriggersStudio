@@ -1,5 +1,8 @@
 package fr.yumaria.jobs.api.model;
 
+// Repere fichier YumariaJobs: modele public immuable utilise par l API (ProgressionFailureReason).
+
+// Role YumariaJobs: Transporte des donnees API immuables entre plugins et services.
 public enum ProgressionFailureReason {
     NONE,
     PLAYER_NOT_FOUND,

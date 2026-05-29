@@ -1,9 +1,12 @@
 package fr.yumaria.jobs.api;
 
+// Repere fichier YumariaJobs: contrat public utilise par les addons Yumaria (YumariaJobsProvider).
+
 import org.bukkit.entity.Player;
 
 import java.util.Map;
 
+// Role YumariaJobs: Definit le contrat public que les addons Yumaria doivent utiliser.
 public interface YumariaJobsProvider {
     YumariaActionService actions();
 

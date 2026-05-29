@@ -1,5 +1,7 @@
 package fr.yumaria.jobs.action;
 
+// Repere fichier YumariaJobs: pipeline central des actions reportees par les addons (ActionAntiAbuseService).
+
 import fr.yumaria.jobs.YumariaJobsPlugin;
 import fr.yumaria.jobs.anticheat.AntiAbuseResult;
 import fr.yumaria.jobs.api.model.YumariaActionReport;
@@ -13,14 +15,17 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+// Role YumariaJobs: Reçoit les actions des addons et les transforme en progression YumariaJobs.
 public final class ActionAntiAbuseService {
     private final YumariaJobsPlugin plugin;
     private final Map<String, ActionWindow> windows = new ConcurrentHashMap<>();
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public ActionAntiAbuseService(YumariaJobsPlugin plugin) {
         this.plugin = plugin;
     }
 
+    // Annotation YumariaJobs: Verifie les conditions avant de laisser continuer le pipeline.
     public AntiAbuseResult validate(UUID playerId, YumariaActionReport report, double xp, double money) {
         if (!plugin.getConfig().getBoolean("anti-abuse.enabled", true)) {
             return AntiAbuseResult.accepted(List.of("anti-abuse disabled"));
@@ -65,6 +70,7 @@ public final class ActionAntiAbuseService {
         }
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private double diminishingMultiplier(String basePath, String normalizedPath, String defaults, ActionWindow window, long now, List<String> debug) {
         boolean enabled = booleanConfig(basePath + "diminishing-returns.enabled", normalizedPath + "diminishing-returns.enabled", defaults + "diminishing-returns.enabled", false);
         if (!enabled) {
@@ -84,6 +90,7 @@ public final class ActionAntiAbuseService {
         return multiplier;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private boolean booleanConfig(String primary, String secondary, String fallbackPath, boolean fallback) {
         if (plugin.getConfig().contains(primary)) {
             return plugin.getConfig().getBoolean(primary, fallback);
@@ -94,6 +101,7 @@ public final class ActionAntiAbuseService {
         return plugin.getConfig().getBoolean(fallbackPath, fallback);
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private long longConfig(String primary, String secondary, String fallbackPath, long fallback) {
         if (plugin.getConfig().contains(primary)) {
             return plugin.getConfig().getLong(primary, fallback);
@@ -104,6 +112,7 @@ public final class ActionAntiAbuseService {
         return plugin.getConfig().getLong(fallbackPath, fallback);
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private double doubleConfig(String primary, String secondary, String fallbackPath, double fallback) {
         if (plugin.getConfig().contains(primary)) {
             return plugin.getConfig().getDouble(primary, fallback);
@@ -118,11 +127,13 @@ public final class ActionAntiAbuseService {
         private final Deque<Entry> entries = new ArrayDeque<>();
         private long lastAcceptedAt;
 
+        // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
         private void accept(long timestamp, double xp, double money) {
             entries.addLast(new Entry(timestamp, xp, money));
             lastAcceptedAt = timestamp;
         }
 
+        // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
         private void prune(long now) {
             long cutoff = now - 3_600_000L;
             while (!entries.isEmpty() && entries.peekFirst().timestamp < cutoff) {
@@ -130,19 +141,23 @@ public final class ActionAntiAbuseService {
             }
         }
 
+        // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
         private long countSince(long cutoff) {
             return entries.stream().filter(entry -> entry.timestamp >= cutoff).count();
         }
 
+        // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
         private double xpSince(long cutoff) {
             return entries.stream().filter(entry -> entry.timestamp >= cutoff).mapToDouble(Entry::xp).sum();
         }
 
+        // Annotation YumariaJobs: Gere la partie argent en passant par la couche economie centrale.
         private double moneySince(long cutoff) {
             return entries.stream().filter(entry -> entry.timestamp >= cutoff).mapToDouble(Entry::money).sum();
         }
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private record Entry(long timestamp, double xp, double money) {
     }
 }

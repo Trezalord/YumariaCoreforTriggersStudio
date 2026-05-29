@@ -1,5 +1,7 @@
 package fr.yumaria.jobs.command;
 
+// Repere fichier YumariaJobs: commande joueur ou admin du plugin (JobsCommand).
+
 import fr.yumaria.jobs.config.JobRegistry;
 import fr.yumaria.jobs.config.LanguageService;
 import fr.yumaria.jobs.config.RankService;
@@ -26,6 +28,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
+// Role YumariaJobs: Traite les commandes joueur et administration du plugin.
 public final class JobsCommand implements CommandExecutor, TabCompleter {
     private final JobRegistry jobRegistry;
     private final PlayerDataService playerDataService;
@@ -54,6 +57,7 @@ public final class JobsCommand implements CommandExecutor, TabCompleter {
     }
 
     @Override
+    // Annotation YumariaJobs: Traite une commande ou ses suggestions.
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0) {
             if (!(sender instanceof Player player)) {
@@ -82,6 +86,7 @@ public final class JobsCommand implements CommandExecutor, TabCompleter {
         };
     }
 
+    // Annotation YumariaJobs: Action joueur liee aux metiers ou aux menus.
     private boolean join(CommandSender sender, String[] args) {
         if (!(sender instanceof Player player)) {
             languageService.send(sender, "commands.player-only");
@@ -103,6 +108,7 @@ public final class JobsCommand implements CommandExecutor, TabCompleter {
         return true;
     }
 
+    // Annotation YumariaJobs: Action joueur liee aux metiers ou aux menus.
     private boolean leave(CommandSender sender, String[] args) {
         if (!(sender instanceof Player player)) {
             languageService.send(sender, "commands.player-only");
@@ -124,6 +130,7 @@ public final class JobsCommand implements CommandExecutor, TabCompleter {
         return true;
     }
 
+    // Annotation YumariaJobs: Action joueur liee aux metiers ou aux menus.
     private boolean toggle(CommandSender sender, String[] args) {
         if (!(sender instanceof Player player)) {
             languageService.send(sender, "commands.player-only");
@@ -143,6 +150,7 @@ public final class JobsCommand implements CommandExecutor, TabCompleter {
         return true;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private boolean stats(CommandSender sender, String[] args) {
         if (!sender.hasPermission("yumariajobs.stats")) {
             languageService.send(sender, "commands.no-permission");
@@ -177,6 +185,7 @@ public final class JobsCommand implements CommandExecutor, TabCompleter {
         return true;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private boolean top(CommandSender sender, String[] args) {
         if (!sender.hasPermission("yumariajobs.top")) {
             languageService.send(sender, "commands.no-permission");
@@ -201,6 +210,7 @@ public final class JobsCommand implements CommandExecutor, TabCompleter {
         return true;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private Optional<JobDefinition> jobArg(CommandSender sender, String[] args) {
         if (args.length < 2) {
             languageService.send(sender, "commands.usage.jobs");
@@ -214,6 +224,7 @@ public final class JobsCommand implements CommandExecutor, TabCompleter {
     }
 
     @Override
+    // Annotation YumariaJobs: Traite une commande ou ses suggestions.
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
             return startsWith(args[0], List.of("join", "leave", "stats", "top", "toggle"));
@@ -227,10 +238,12 @@ public final class JobsCommand implements CommandExecutor, TabCompleter {
         return List.of();
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private List<String> jobIds() {
         return jobRegistry.all().stream().map(JobDefinition::id).toList();
     }
 
+    // Annotation YumariaJobs: Gere l affichage ou le cycle de vie d un feedback visuel.
     private List<String> startsWith(String token, List<String> values) {
         String normalized = token.toLowerCase(Locale.ROOT);
         List<String> results = new ArrayList<>();

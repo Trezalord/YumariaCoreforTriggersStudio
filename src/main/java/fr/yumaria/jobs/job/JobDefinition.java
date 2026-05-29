@@ -1,8 +1,11 @@
 package fr.yumaria.jobs.job;
 
+// Repere fichier YumariaJobs: definition et logique metier configurable (JobDefinition).
+
 import java.util.List;
 import java.util.Map;
 
+// Role YumariaJobs: Represente les metiers, actions, rangs et placeholders associes.
 public final class JobDefinition {
     private final String id;
     private final boolean enabled;
@@ -51,58 +54,72 @@ public final class JobDefinition {
         this.levelRewards = Map.copyOf(levelRewards);
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public String id() {
         return id;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public boolean enabled() {
         return enabled;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public String displayName() {
         return displayName;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public List<String> description() {
         return description;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public IconDefinition icon() {
         return icon;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public int maxLevel() {
         return maxLevel;
     }
 
+    // Annotation YumariaJobs: Calcule ou interprete une valeur configurable.
     public String requiredProgressExpression() {
         return requiredProgressExpression;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public String pointsRewardedExpression() {
         return pointsRewardedExpression;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public boolean allowProgressWhenInactive() {
         return allowProgressWhenInactive;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public double xpMultiplier() {
         return xpMultiplier;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public Map<String, JobActionDefinition> actions() {
         return actions;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public Map<String, JobSourceDefinition> sources() {
         return sources;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public RewardDefinition defaultReward() {
         return defaultReward;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public Map<Integer, RewardDefinition> levelRewards() {
         return levelRewards;
     }

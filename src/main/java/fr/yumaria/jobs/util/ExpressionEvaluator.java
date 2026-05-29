@@ -1,12 +1,16 @@
 package fr.yumaria.jobs.util;
 
+// Repere fichier YumariaJobs: outil utilitaire partage dans le plugin (ExpressionEvaluator).
+
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+// Role YumariaJobs: Regroupe les helpers partages du plugin.
 public final class ExpressionEvaluator {
     private static final Pattern PLACEHOLDER = Pattern.compile("%([a-zA-Z0-9_]+)%");
 
+    // Annotation YumariaJobs: Calcule ou interprete une valeur configurable.
     public double evaluate(String expression, Map<String, Double> variables, double fallback) {
         if (expression == null || expression.isBlank()) {
             return fallback;
@@ -25,6 +29,7 @@ public final class ExpressionEvaluator {
         }
     }
 
+    // Annotation YumariaJobs: Formate ou normalise du texte pour affichage, commandes ou recherche.
     private String replaceVariables(String expression, Map<String, Double> variables) {
         Matcher matcher = PLACEHOLDER.matcher(expression);
         StringBuffer buffer = new StringBuffer();
@@ -40,10 +45,12 @@ public final class ExpressionEvaluator {
         private final String input;
         private int index;
 
+        // Annotation YumariaJobs: Calcule ou interprete une valeur configurable.
         private Parser(String input) {
             this.input = input;
         }
 
+        // Annotation YumariaJobs: Calcule ou interprete une valeur configurable.
         private double parseExpression() {
             double value = parseTerm();
             while (true) {
@@ -58,6 +65,7 @@ public final class ExpressionEvaluator {
             }
         }
 
+        // Annotation YumariaJobs: Calcule ou interprete une valeur configurable.
         private double parseTerm() {
             double value = parsePower();
             while (true) {
@@ -72,6 +80,7 @@ public final class ExpressionEvaluator {
             }
         }
 
+        // Annotation YumariaJobs: Calcule ou interprete une valeur configurable.
         private double parsePower() {
             double value = parseUnary();
             skipWhitespace();
@@ -81,6 +90,7 @@ public final class ExpressionEvaluator {
             return value;
         }
 
+        // Annotation YumariaJobs: Calcule ou interprete une valeur configurable.
         private double parseUnary() {
             skipWhitespace();
             if (match('+')) {
@@ -92,6 +102,7 @@ public final class ExpressionEvaluator {
             return parsePrimary();
         }
 
+        // Annotation YumariaJobs: Calcule ou interprete une valeur configurable.
         private double parsePrimary() {
             skipWhitespace();
             if (match('(')) {
@@ -104,6 +115,7 @@ public final class ExpressionEvaluator {
             return parseNumber();
         }
 
+        // Annotation YumariaJobs: Calcule ou interprete une valeur configurable.
         private double parseNumber() {
             skipWhitespace();
             int start = index;
@@ -127,6 +139,7 @@ public final class ExpressionEvaluator {
             return Double.parseDouble(input.substring(start, index));
         }
 
+        // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
         private boolean match(char expected) {
             skipWhitespace();
             if (isEnd() || input.charAt(index) != expected) {
@@ -136,6 +149,7 @@ public final class ExpressionEvaluator {
             return true;
         }
 
+        // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
         private void skipWhitespace() {
             while (!isEnd() && Character.isWhitespace(input.charAt(index))) {
                 index++;

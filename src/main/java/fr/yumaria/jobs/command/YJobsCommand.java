@@ -1,5 +1,7 @@
 package fr.yumaria.jobs.command;
 
+// Repere fichier YumariaJobs: commande joueur ou admin du plugin (YJobsCommand).
+
 import fr.yumaria.jobs.YumariaJobsPlugin;
 import fr.yumaria.jobs.api.model.JobXpRequest;
 import fr.yumaria.jobs.api.model.ProgressionResult;
@@ -29,6 +31,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
+// Role YumariaJobs: Traite les commandes joueur et administration du plugin.
 public final class YJobsCommand implements CommandExecutor, TabCompleter {
     private final YumariaJobsPlugin plugin;
     private final JobRegistry jobRegistry;
@@ -63,6 +66,7 @@ public final class YJobsCommand implements CommandExecutor, TabCompleter {
     }
 
     @Override
+    // Annotation YumariaJobs: Traite une commande ou ses suggestions.
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!sender.hasPermission("yumariajobs.admin")) {
             languageService.send(sender, "commands.no-permission");
@@ -92,6 +96,7 @@ public final class YJobsCommand implements CommandExecutor, TabCompleter {
         return true;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private boolean debug(CommandSender sender, String[] args) {
         if (args.length < 2) {
             languageService.send(sender, "commands.usage.yjobs-debug");
@@ -109,6 +114,7 @@ public final class YJobsCommand implements CommandExecutor, TabCompleter {
         };
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private boolean debugItem(CommandSender sender) {
         if (!(sender instanceof Player player)) {
             languageService.send(sender, "jobs.debug-item-player-only");
@@ -125,6 +131,7 @@ public final class YJobsCommand implements CommandExecutor, TabCompleter {
         return true;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private boolean profile(CommandSender sender, String[] args) {
         if (args.length < 2) {
             languageService.send(sender, "commands.usage.yjobs");
@@ -133,6 +140,7 @@ public final class YJobsCommand implements CommandExecutor, TabCompleter {
         return debugInfo(sender, new String[] {"debug", "info", args[1]});
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private boolean xp(CommandSender sender, String[] args) {
         if (args.length < 5 || !args[1].equalsIgnoreCase("add")) {
             languageService.send(sender, "commands.usage.yjobs");
@@ -168,6 +176,7 @@ public final class YJobsCommand implements CommandExecutor, TabCompleter {
         return true;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private boolean level(CommandSender sender, String[] args) {
         if (args.length < 5 || !args[1].equalsIgnoreCase("set")) {
             languageService.send(sender, "commands.usage.yjobs");
@@ -192,6 +201,7 @@ public final class YJobsCommand implements CommandExecutor, TabCompleter {
         return true;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private boolean debugProgress(CommandSender sender, String[] args) {
         if (args.length < 5) {
             languageService.send(sender, "commands.usage.yjobs-debug");
@@ -232,6 +242,7 @@ public final class YJobsCommand implements CommandExecutor, TabCompleter {
         return true;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private boolean debugInfo(CommandSender sender, String[] args) {
         if (args.length < 3) {
             languageService.send(sender, "commands.usage.yjobs-debug");
@@ -275,6 +286,7 @@ public final class YJobsCommand implements CommandExecutor, TabCompleter {
         return true;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private String ensureDiagnosticEligibility(Player target, JobDefinition job) {
         if (!plugin.getConfig().getBoolean("progress-bar.enabled", true)) {
             return "progress-bar.enabled is false";
@@ -304,6 +316,7 @@ public final class YJobsCommand implements CommandExecutor, TabCompleter {
         return null;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private boolean admin(CommandSender sender, String[] args) {
         if (args.length < 4) {
             languageService.send(sender, "commands.usage.yjobs");
@@ -356,6 +369,7 @@ public final class YJobsCommand implements CommandExecutor, TabCompleter {
         return true;
     }
 
+    // Annotation YumariaJobs: Calcule ou interprete une valeur configurable.
     private double parseDouble(CommandSender sender, String input) {
         try {
             return Double.parseDouble(input);
@@ -365,6 +379,7 @@ public final class YJobsCommand implements CommandExecutor, TabCompleter {
         }
     }
 
+    // Annotation YumariaJobs: Calcule ou interprete une valeur configurable.
     private int parseInt(CommandSender sender, String input) {
         try {
             return Integer.parseInt(input);
@@ -375,6 +390,7 @@ public final class YJobsCommand implements CommandExecutor, TabCompleter {
     }
 
     @Override
+    // Annotation YumariaJobs: Traite une commande ou ses suggestions.
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
             return startsWith(args[0], List.of("reload", "profile", "xp", "level", "admin", "debug"));
@@ -415,6 +431,7 @@ public final class YJobsCommand implements CommandExecutor, TabCompleter {
         return List.of();
     }
 
+    // Annotation YumariaJobs: Gere l affichage ou le cycle de vie d un feedback visuel.
     private List<String> startsWith(String token, List<String> values) {
         String normalized = token.toLowerCase(Locale.ROOT);
         List<String> results = new ArrayList<>();

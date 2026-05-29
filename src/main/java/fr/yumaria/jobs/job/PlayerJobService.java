@@ -1,11 +1,14 @@
 package fr.yumaria.jobs.job;
 
+// Repere fichier YumariaJobs: definition et logique metier configurable (PlayerJobService).
+
 import fr.yumaria.jobs.YumariaJobsPlugin;
 import fr.yumaria.jobs.data.PlayerData;
 import fr.yumaria.jobs.data.PlayerDataService;
 import fr.yumaria.jobs.data.PlayerJobData;
 import org.bukkit.entity.Player;
 
+// Role YumariaJobs: Represente les metiers, actions, rangs et placeholders associes.
 public final class PlayerJobService {
     public enum ToggleResult {
         ACTIVE,
@@ -17,11 +20,13 @@ public final class PlayerJobService {
     private final YumariaJobsPlugin plugin;
     private final PlayerDataService playerDataService;
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public PlayerJobService(YumariaJobsPlugin plugin, PlayerDataService playerDataService) {
         this.plugin = plugin;
         this.playerDataService = playerDataService;
     }
 
+    // Annotation YumariaJobs: Action joueur liee aux metiers ou aux menus.
     public boolean join(Player player, JobDefinition job) {
         PlayerData data = playerDataService.getOrLoad(player);
         PlayerJobData jobData = data.job(job.id());
@@ -37,6 +42,7 @@ public final class PlayerJobService {
         return true;
     }
 
+    // Annotation YumariaJobs: Action joueur liee aux metiers ou aux menus.
     public boolean leave(Player player, JobDefinition job) {
         PlayerData data = playerDataService.getOrLoad(player);
         PlayerJobData jobData = data.peekJob(job.id());
@@ -48,6 +54,7 @@ public final class PlayerJobService {
         return true;
     }
 
+    // Annotation YumariaJobs: Action joueur liee aux metiers ou aux menus.
     public ToggleResult toggle(Player player, JobDefinition job) {
         PlayerData data = playerDataService.getOrLoad(player);
         PlayerJobData jobData = data.peekJob(job.id());
@@ -79,6 +86,7 @@ public final class PlayerJobService {
         playerDataService.markDirty(data);
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public void reset(Player player, JobDefinition job) {
         PlayerData data = playerDataService.getOrLoad(player);
         data.jobs().remove(job.id());
@@ -92,6 +100,7 @@ public final class PlayerJobService {
         return activeCount(data) == 0;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public int activeCount(PlayerData data) {
         int count = 0;
         for (PlayerJobData jobData : data.jobs().values()) {

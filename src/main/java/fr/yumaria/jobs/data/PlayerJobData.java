@@ -1,8 +1,11 @@
 package fr.yumaria.jobs.data;
 
+// Repere fichier YumariaJobs: donnees joueur, cache, stats et sauvegarde (PlayerJobData).
+
 import java.util.HashMap;
 import java.util.Map;
 
+// Role YumariaJobs: Stocke les profils joueur, les stats et la sauvegarde disque.
 public final class PlayerJobData {
     private boolean joined;
     private boolean active;
@@ -21,10 +24,12 @@ public final class PlayerJobData {
     private final Map<String, Integer> actionTypeActions;
     private final Map<String, Long> lastActionTimestamps;
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public PlayerJobData() {
         this(false, false, 1, 0.0D, 0.0D, 0, 0.0D);
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public PlayerJobData(boolean joined, boolean active, int level, double progress, double totalProgress, int prestige, double points) {
         this(joined, active, level, progress, totalProgress, prestige, points, 0L, 0L, 0L, Map.of(), Map.of(), Map.of());
     }
@@ -83,14 +88,17 @@ public final class PlayerJobData {
         this.lastActionTimestamps = new HashMap<>(lastActionTimestamps);
     }
 
+    // Annotation YumariaJobs: Produit une copie sure pour eviter d exposer les donnees internes mutables.
     public PlayerJobData copy() {
         return new PlayerJobData(joined, active, level, progress, totalProgress, prestige, points, totalActions, levelUps, prestiges, totalMoney, sourceProgress, sourceActions, sourceMoney, actionTypeActions, lastActionTimestamps);
     }
 
+    // Annotation YumariaJobs: Action joueur liee aux metiers ou aux menus.
     public boolean isJoined() {
         return joined;
     }
 
+    // Annotation YumariaJobs: Action joueur liee aux metiers ou aux menus.
     public void setJoined(boolean joined) {
         this.joined = joined;
     }
@@ -127,10 +135,12 @@ public final class PlayerJobData {
         this.totalProgress = Math.max(0.0D, totalProgress);
     }
 
+    // Annotation YumariaJobs: Gere la logique de prestige et ses conditions.
     public int getPrestige() {
         return prestige;
     }
 
+    // Annotation YumariaJobs: Gere la logique de prestige et ses conditions.
     public void setPrestige(int prestige) {
         this.prestige = Math.max(0, prestige);
     }
@@ -143,11 +153,13 @@ public final class PlayerJobData {
         this.points = Math.max(0.0D, points);
     }
 
+    // Annotation YumariaJobs: Ajoute de la progression via le chemin XP officiel du plugin.
     public void addProgress(double amount) {
         progress += amount;
         totalProgress += amount;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public void addPoints(double amount) {
         points += Math.max(0.0D, amount);
     }
@@ -156,14 +168,17 @@ public final class PlayerJobData {
         return totalActions;
     }
 
+    // Annotation YumariaJobs: Controle les montees de niveau et les recompenses associees.
     public long getLevelUps() {
         return levelUps;
     }
 
+    // Annotation YumariaJobs: Gere la logique de prestige et ses conditions.
     public long getPrestiges() {
         return prestiges;
     }
 
+    // Annotation YumariaJobs: Gere la partie argent en passant par la couche economie centrale.
     public double getTotalMoney() {
         return totalMoney;
     }
@@ -176,6 +191,7 @@ public final class PlayerJobData {
         return Map.copyOf(sourceActions);
     }
 
+    // Annotation YumariaJobs: Gere la partie argent en passant par la couche economie centrale.
     public Map<String, Double> getSourceMoney() {
         return Map.copyOf(sourceMoney);
     }
@@ -188,6 +204,7 @@ public final class PlayerJobData {
         return Map.copyOf(lastActionTimestamps);
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public void recordAction(String source, double amount, long timestamp) {
         String safeSource = source == null || source.isBlank() ? "unknown" : source;
         totalActions++;
@@ -196,6 +213,7 @@ public final class PlayerJobData {
         lastActionTimestamps.put(safeSource, timestamp);
     }
 
+    // Annotation YumariaJobs: Gere la partie argent en passant par la couche economie centrale.
     public void recordMoney(String source, double amount) {
         String safeSource = source == null || source.isBlank() ? "unknown" : source;
         double safeAmount = Math.max(0.0D, amount);
@@ -203,15 +221,18 @@ public final class PlayerJobData {
         sourceMoney.merge(safeSource, safeAmount, Double::sum);
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public void recordActionType(String actionType) {
         String safeActionType = actionType == null || actionType.isBlank() ? "unknown" : actionType;
         actionTypeActions.merge(safeActionType, 1, Integer::sum);
     }
 
+    // Annotation YumariaJobs: Controle les montees de niveau et les recompenses associees.
     public void incrementLevelUps() {
         levelUps++;
     }
 
+    // Annotation YumariaJobs: Gere la logique de prestige et ses conditions.
     public void incrementPrestiges() {
         prestiges++;
     }

@@ -1,5 +1,7 @@
 package fr.yumaria.jobs.data;
 
+// Repere fichier YumariaJobs: donnees joueur, cache, stats et sauvegarde (PlayerDataService).
+
 import fr.yumaria.jobs.YumariaJobsPlugin;
 import fr.yumaria.jobs.api.JobStatsService;
 import fr.yumaria.jobs.api.PlayerProfileService;
@@ -31,6 +33,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+// Role YumariaJobs: Stocke les profils joueur, les stats et la sauvegarde disque.
 public final class PlayerDataService implements PlayerProfileService, JobStatsService {
     private final YumariaJobsPlugin plugin;
     private final Map<UUID, PlayerData> cache = new ConcurrentHashMap<>();
@@ -39,6 +42,7 @@ public final class PlayerDataService implements PlayerProfileService, JobStatsSe
     private final ExecutorService saveExecutor;
     private final File playersFolder;
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public PlayerDataService(YumariaJobsPlugin plugin) {
         this.plugin = plugin;
         this.playersFolder = new File(plugin.getDataFolder(), "data/players");
@@ -49,47 +53,57 @@ public final class PlayerDataService implements PlayerProfileService, JobStatsSe
         });
     }
 
+    // Annotation YumariaJobs: Gere l affichage ou le cycle de vie d un feedback visuel.
     public void start() {
         playersFolder.mkdirs();
     }
 
+    // Annotation YumariaJobs: Charge les donnees depuis la configuration ou le disque.
     public PlayerData getOrLoad(Player player) {
         PlayerData data = getOrLoad(player.getUniqueId(), player.getName());
         data.setName(player.getName());
         return data;
     }
 
+    // Annotation YumariaJobs: Charge les donnees depuis la configuration ou le disque.
     public PlayerData getOrLoad(OfflinePlayer player) {
         String name = player.getName() == null ? player.getUniqueId().toString() : player.getName();
         return getOrLoad(player.getUniqueId(), name);
     }
 
+    // Annotation YumariaJobs: Charge les donnees depuis la configuration ou le disque.
     public PlayerData getOrLoad(UUID uuid, String name) {
+        // Cache principal des profils: charge depuis le disque seulement au premier acces.
         return cache.computeIfAbsent(uuid, ignored -> loadFromDisk(uuid, name));
     }
 
     @Override
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public Optional<PlayerProfile> profile(UUID playerId) {
         PlayerData data = cache.get(playerId);
         return data == null ? Optional.empty() : Optional.of(snapshot(data));
     }
 
     @Override
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public Optional<PlayerProfile> profile(Player player) {
         return player == null ? Optional.empty() : Optional.of(snapshot(getOrLoad(player)));
     }
 
     @Override
+    // Annotation YumariaJobs: Charge les donnees depuis la configuration ou le disque.
     public PlayerProfile getOrLoadProfile(Player player) {
         return snapshot(getOrLoad((OfflinePlayer) player));
     }
 
     @Override
+    // Annotation YumariaJobs: Charge les donnees depuis la configuration ou le disque.
     public boolean isLoaded(UUID playerId) {
         return cache.containsKey(playerId);
     }
 
     @Override
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public Optional<JobStats> jobStats(UUID playerId, String jobId) {
         return profile(playerId)
                 .map(PlayerProfile::jobs)
@@ -98,6 +112,7 @@ public final class PlayerDataService implements PlayerProfileService, JobStatsSe
     }
 
     @Override
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public Map<String, JobStats> allJobStats(UUID playerId) {
         Optional<PlayerProfile> profile = profile(playerId);
         if (profile.isEmpty()) {
@@ -110,11 +125,14 @@ public final class PlayerDataService implements PlayerProfileService, JobStatsSe
         return Map.copyOf(stats);
     }
 
+    // Annotation YumariaJobs: Prepare ou execute la sauvegarde des donnees sans bloquer inutilement le serveur.
     public void markDirty(PlayerData data) {
+        // Marque le profil a sauvegarder plus tard pour eviter une ecriture disque a chaque gain d'XP.
         dirty.add(data.uuid());
         scheduleSave(data.uuid());
     }
 
+    // Annotation YumariaJobs: Prepare ou execute la sauvegarde des donnees sans bloquer inutilement le serveur.
     public void saveDirtyAsync() {
         for (UUID uuid : List.copyOf(dirty)) {
             PlayerData data = cache.get(uuid);
@@ -125,6 +143,7 @@ public final class PlayerDataService implements PlayerProfileService, JobStatsSe
         }
     }
 
+    // Annotation YumariaJobs: Prepare ou execute la sauvegarde des donnees sans bloquer inutilement le serveur.
     public void saveAsync(UUID uuid) {
         PlayerData data = cache.get(uuid);
         if (data == null) {
@@ -134,6 +153,7 @@ public final class PlayerDataService implements PlayerProfileService, JobStatsSe
         submitSave(data.copy());
     }
 
+    // Annotation YumariaJobs: Prepare ou execute la sauvegarde des donnees sans bloquer inutilement le serveur.
     public void unload(UUID uuid) {
         saveAsync(uuid);
         cache.remove(uuid);
@@ -143,6 +163,7 @@ public final class PlayerDataService implements PlayerProfileService, JobStatsSe
         }
     }
 
+    // Annotation YumariaJobs: Prepare ou execute la sauvegarde des donnees sans bloquer inutilement le serveur.
     public void saveAllBlocking() {
         for (Integer taskId : pendingSaveTasks.values()) {
             Bukkit.getScheduler().cancelTask(taskId);
@@ -169,6 +190,7 @@ public final class PlayerDataService implements PlayerProfileService, JobStatsSe
         }
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public List<LeaderboardEntry> leaderboard(String jobId, int limit) {
         Map<UUID, LeaderboardEntry> entries = new HashMap<>();
         File[] files = playersFolder.listFiles((dir, name) -> name.endsWith(".yml"));
@@ -194,6 +216,7 @@ public final class PlayerDataService implements PlayerProfileService, JobStatsSe
                 .toList();
     }
 
+    // Annotation YumariaJobs: Prepare ou execute la sauvegarde des donnees sans bloquer inutilement le serveur.
     private void scheduleSave(UUID uuid) {
         if (pendingSaveTasks.containsKey(uuid)) {
             return;
@@ -211,7 +234,9 @@ public final class PlayerDataService implements PlayerProfileService, JobStatsSe
         pendingSaveTasks.put(uuid, taskId);
     }
 
+    // Annotation YumariaJobs: Charge les donnees depuis la configuration ou le disque.
     private PlayerData loadFromDisk(UUID uuid, String fallbackName) {
+        // Lecture YAML compatible avec les anciennes donnees: les nouveaux champs ont des valeurs par defaut.
         File file = fileFor(uuid);
         if (!file.isFile()) {
             PlayerData fresh = new PlayerData(uuid, fallbackName);
@@ -253,6 +278,7 @@ public final class PlayerDataService implements PlayerProfileService, JobStatsSe
         return loaded;
     }
 
+    // Annotation YumariaJobs: Charge les donnees depuis la configuration ou le disque.
     private LeaderboardEntry readLeaderboardEntry(File file, String jobId) {
         try {
             UUID uuid = UUID.fromString(file.getName().replace(".yml", ""));
@@ -274,12 +300,15 @@ public final class PlayerDataService implements PlayerProfileService, JobStatsSe
         }
     }
 
+    // Annotation YumariaJobs: Prepare ou execute la sauvegarde des donnees sans bloquer inutilement le serveur.
     private void submitSave(PlayerData snapshot) {
         fireProfileSave(snapshot);
         saveExecutor.submit(() -> writeSnapshot(snapshot));
     }
 
+    // Annotation YumariaJobs: Prepare ou execute la sauvegarde des donnees sans bloquer inutilement le serveur.
     private void writeSnapshot(PlayerData snapshot) {
+        // Sauvegarde d'un snapshot immutable/copie sur le thread IO dedie.
         YamlConfiguration configuration = new YamlConfiguration();
         configuration.set("name", snapshot.name());
         for (Map.Entry<String, PlayerJobData> entry : snapshot.jobs().entrySet()) {
@@ -310,11 +339,14 @@ public final class PlayerDataService implements PlayerProfileService, JobStatsSe
         }
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private File fileFor(UUID uuid) {
         return new File(playersFolder, uuid + ".yml");
     }
 
+    // Annotation YumariaJobs: Produit une copie sure pour eviter d exposer les donnees internes mutables.
     private PlayerProfile snapshot(PlayerData data) {
+        // Convertit les donnees internes mutables en modele API public en lecture seule.
         Map<String, JobProgress> jobs = new HashMap<>();
         for (Map.Entry<String, PlayerJobData> entry : data.jobs().entrySet()) {
             PlayerJobData jobData = entry.getValue();
@@ -341,7 +373,9 @@ public final class PlayerDataService implements PlayerProfileService, JobStatsSe
         return new PlayerProfile(data.uuid(), data.name(), jobs, Map.of());
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private JobStats statsFromProgress(JobProgress progress) {
+        // Vue stats publique: utile pour placeholders, commandes et futurs addons.
         return new JobStats(
                 progress.jobId(),
                 progress.totalProgress(),
@@ -356,6 +390,7 @@ public final class PlayerDataService implements PlayerProfileService, JobStatsSe
         );
     }
 
+    // Annotation YumariaJobs: Charge les donnees depuis la configuration ou le disque.
     private Map<String, Double> readDoubleMap(ConfigurationSection section) {
         Map<String, Double> map = new HashMap<>();
         if (section != null) {
@@ -366,6 +401,7 @@ public final class PlayerDataService implements PlayerProfileService, JobStatsSe
         return map;
     }
 
+    // Annotation YumariaJobs: Charge les donnees depuis la configuration ou le disque.
     private Map<String, Integer> readIntegerMap(ConfigurationSection section) {
         Map<String, Integer> map = new HashMap<>();
         if (section != null) {
@@ -376,6 +412,7 @@ public final class PlayerDataService implements PlayerProfileService, JobStatsSe
         return map;
     }
 
+    // Annotation YumariaJobs: Charge les donnees depuis la configuration ou le disque.
     private Map<String, Long> readLongMap(ConfigurationSection section) {
         Map<String, Long> map = new HashMap<>();
         if (section != null) {
@@ -386,18 +423,21 @@ public final class PlayerDataService implements PlayerProfileService, JobStatsSe
         return map;
     }
 
+    // Annotation YumariaJobs: Prepare ou execute la sauvegarde des donnees sans bloquer inutilement le serveur.
     private void writeMap(YamlConfiguration configuration, String path, Map<String, ?> values) {
         for (Map.Entry<String, ?> entry : values.entrySet()) {
             configuration.set(path + "." + entry.getKey(), entry.getValue());
         }
     }
 
+    // Annotation YumariaJobs: Charge les donnees depuis la configuration ou le disque.
     private void fireProfileLoad(PlayerData data) {
         if (Bukkit.isPrimaryThread()) {
             Bukkit.getPluginManager().callEvent(new YumariaProfileLoadEvent(snapshot(data)));
         }
     }
 
+    // Annotation YumariaJobs: Prepare ou execute la sauvegarde des donnees sans bloquer inutilement le serveur.
     private void fireProfileSave(PlayerData data) {
         if (Bukkit.isPrimaryThread()) {
             Bukkit.getPluginManager().callEvent(new YumariaProfileSaveEvent(snapshot(data)));

@@ -1,18 +1,23 @@
 package fr.yumaria.jobs.hook;
 
+// Repere fichier YumariaJobs: integration optionnelle avec plugins externes (ItemsAdderIconService).
+
 import fr.yumaria.jobs.YumariaJobsPlugin;
 import fr.yumaria.jobs.job.IconDefinition;
 import org.bukkit.inventory.ItemStack;
 
 import java.lang.reflect.Method;
 
+// Role YumariaJobs: Branche les integrations optionnelles sans dependance obligatoire.
 public final class ItemsAdderIconService {
     private final YumariaJobsPlugin plugin;
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public ItemsAdderIconService(YumariaJobsPlugin plugin) {
         this.plugin = plugin;
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public ItemStack createIcon(IconDefinition icon) {
         if (icon.itemsAdderId() != null
                 && !icon.itemsAdderId().isBlank()
@@ -26,6 +31,7 @@ public final class ItemsAdderIconService {
         return new ItemStack(icon.material());
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private ItemStack tryItemsAdder(String id) {
         try {
             Class<?> customStackClass = Class.forName("dev.lone.itemsadder.api.CustomStack");

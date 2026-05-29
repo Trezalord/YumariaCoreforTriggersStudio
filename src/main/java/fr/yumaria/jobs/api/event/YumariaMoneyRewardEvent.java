@@ -1,5 +1,7 @@
 package fr.yumaria.jobs.api.event;
 
+// Repere fichier YumariaJobs: evenement public expose aux autres plugins (YumariaMoneyRewardEvent).
+
 import org.bukkit.entity.Player;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
@@ -7,6 +9,7 @@ import org.bukkit.event.HandlerList;
 
 import java.util.Map;
 
+// Role YumariaJobs: Expose un evenement Bukkit public pour les plugins externes.
 public final class YumariaMoneyRewardEvent extends Event implements Cancellable {
     private static final HandlerList HANDLERS = new HandlerList();
 
@@ -17,6 +20,7 @@ public final class YumariaMoneyRewardEvent extends Event implements Cancellable 
     private boolean cancelled;
     private double amount;
 
+    // Annotation YumariaJobs: Gere la partie argent en passant par la couche economie centrale.
     public YumariaMoneyRewardEvent(Player player, String professionId, String source, double amount, Map<String, Object> context) {
         this.player = player;
         this.professionId = professionId == null ? "" : professionId;

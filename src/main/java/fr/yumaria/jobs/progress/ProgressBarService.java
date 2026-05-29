@@ -1,5 +1,7 @@
 package fr.yumaria.jobs.progress;
 
+// Repere fichier YumariaJobs: progression, niveaux et feedback visuel (ProgressBarService).
+
 import fr.yumaria.jobs.YumariaJobsPlugin;
 import fr.yumaria.jobs.config.RankService;
 import fr.yumaria.jobs.data.PlayerJobData;
@@ -8,6 +10,7 @@ import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
+// Role YumariaJobs: Gere XP, niveaux, prestige et feedback visuel de progression.
 public final class ProgressBarService {
     private final YumariaJobsPlugin plugin;
     private final ProgressionService progressionService;
@@ -29,14 +32,17 @@ public final class ProgressBarService {
         this.bossBarManager = bossBarManager;
     }
 
+    // Annotation YumariaJobs: Gere l affichage ou le cycle de vie d un feedback visuel.
     public void start() {
         // Event-driven only. Bossbar hiding is handled by each BossBarSession.
     }
 
+    // Annotation YumariaJobs: Gere l affichage ou le cycle de vie d un feedback visuel.
     public void stop() {
         bossBarManager.removeAll();
     }
 
+    // Annotation YumariaJobs: Gere l affichage ou le cycle de vie d un feedback visuel.
     public void showProgress(Player player, JobDefinition job, PlayerJobData data) {
         if (!Bukkit.isPrimaryThread()) {
             plugin.debugBossbar("showProgress requested off main thread; rescheduling player=" + (player == null ? "-" : player.getName())
@@ -74,10 +80,12 @@ public final class ProgressBarService {
         bossBarManager.showProgress(player, snapshot, title);
     }
 
+    // Annotation YumariaJobs: Gere l affichage ou le cycle de vie d un feedback visuel.
     public void remove(Player player) {
         remove(player, "player removal");
     }
 
+    // Annotation YumariaJobs: Gere l affichage ou le cycle de vie d un feedback visuel.
     public void remove(Player player, String reason) {
         if (player != null) {
             bossBarManager.remove(player.getUniqueId(), reason);

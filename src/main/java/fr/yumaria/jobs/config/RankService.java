@@ -1,5 +1,7 @@
 package fr.yumaria.jobs.config;
 
+// Repere fichier YumariaJobs: chargement et lecture des fichiers de configuration (RankService).
+
 import fr.yumaria.jobs.YumariaJobsPlugin;
 import fr.yumaria.jobs.job.RankDefinition;
 import org.bukkit.configuration.ConfigurationSection;
@@ -8,14 +10,17 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
+// Role YumariaJobs: Charge les fichiers YAML et resout les definitions configurables.
 public final class RankService {
     private final YumariaJobsPlugin plugin;
     private List<RankDefinition> ranks = List.of(new RankDefinition(1, "Apprenti"));
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public RankService(YumariaJobsPlugin plugin) {
         this.plugin = plugin;
     }
 
+    // Annotation YumariaJobs: Recharge la configuration sans effacer les donnees joueur en memoire.
     public void reload() {
         List<RankDefinition> loaded = new ArrayList<>();
         for (Object object : plugin.getConfig().getList("ranks", List.of())) {
@@ -34,6 +39,7 @@ public final class RankService {
         }
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     public String rankForLevel(int level) {
         for (RankDefinition rank : ranks) {
             if (level >= rank.minLevel()) {
@@ -43,6 +49,7 @@ public final class RankService {
         return ranks.get(ranks.size() - 1).name();
     }
 
+    // Annotation YumariaJobs: Calcule ou interprete une valeur configurable.
     private int parseInt(Object object, int fallback) {
         if (object instanceof Number number) {
             return number.intValue();

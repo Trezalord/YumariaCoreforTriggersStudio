@@ -1,18 +1,23 @@
 package fr.yumaria.jobs.progress;
 
+// Repere fichier YumariaJobs: progression, niveaux et feedback visuel (ProgressFormatter).
+
 import fr.yumaria.jobs.YumariaJobsPlugin;
 import fr.yumaria.jobs.util.Text;
 
 import java.util.HashMap;
 import java.util.Map;
 
+// Role YumariaJobs: Gere XP, niveaux, prestige et feedback visuel de progression.
 public final class ProgressFormatter {
     private final YumariaJobsPlugin plugin;
 
+    // Annotation YumariaJobs: Formate ou normalise du texte pour affichage, commandes ou recherche.
     public ProgressFormatter(YumariaJobsPlugin plugin) {
         this.plugin = plugin;
     }
 
+    // Annotation YumariaJobs: Formate ou normalise du texte pour affichage, commandes ou recherche.
     public String formatTitle(ProgressSnapshot snapshot) {
         String title = plugin.getConfig().getString(
                 "progress-bar.title",
@@ -32,6 +37,7 @@ public final class ProgressFormatter {
         return Text.color(formattedTitle);
     }
 
+    // Annotation YumariaJobs: Formate ou normalise du texte pour affichage, commandes ou recherche.
     public Map<String, String> placeholders(ProgressSnapshot snapshot) {
         Map<String, String> placeholders = new HashMap<>();
         placeholders.put("%job_id%", snapshot.jobId());
@@ -48,6 +54,7 @@ public final class ProgressFormatter {
         return placeholders;
     }
 
+    // Annotation YumariaJobs: Gere la logique de prestige et ses conditions.
     public String prestigeDisplay(ProgressSnapshot snapshot) {
         String format = snapshot.prestige() > 0
                 ? plugin.getConfig().getString("progress-bar.prestige-display", "&5P%prestige% &8| ")
@@ -55,6 +62,7 @@ public final class ProgressFormatter {
         return Text.placeholders(format, Map.of("%prestige%", Integer.toString(snapshot.prestige())));
     }
 
+    // Annotation YumariaJobs: Gere l affichage ou le cycle de vie d un feedback visuel.
     public String textProgressBar(ProgressSnapshot snapshot) {
         String basePath = plugin.getConfig().isConfigurationSection("progress-bar.text-progress-bar")
                 ? "progress-bar.text-progress-bar"

@@ -1,5 +1,7 @@
 package fr.yumaria.jobs.progress;
 
+// Repere fichier YumariaJobs: progression, niveaux et feedback visuel (BossBarManager).
+
 import fr.yumaria.jobs.YumariaJobsPlugin;
 import org.bukkit.Bukkit;
 import org.bukkit.boss.BarColor;
@@ -15,15 +17,18 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+// Role YumariaJobs: Gere XP, niveaux, prestige et feedback visuel de progression.
 public final class BossBarManager {
     private final YumariaJobsPlugin plugin;
     private final Map<UUID, BossBarSession> sessions = new ConcurrentHashMap<>();
     private final Set<String> warnedValues = new HashSet<>();
 
+    // Annotation YumariaJobs: Gere l affichage ou le cycle de vie d un feedback visuel.
     public BossBarManager(YumariaJobsPlugin plugin) {
         this.plugin = plugin;
     }
 
+    // Annotation YumariaJobs: Gere l affichage ou le cycle de vie d un feedback visuel.
     public void showProgress(Player player, ProgressSnapshot snapshot, String title) {
         if (!Bukkit.isPrimaryThread()) {
             plugin.debugBossbar("BossBarManager.showProgress off main thread; rescheduling player=" + (player == null ? "-" : player.getName())
@@ -65,16 +70,19 @@ public final class BossBarManager {
         refreshHideTask(uuid, session);
     }
 
+    // Annotation YumariaJobs: Gere l affichage ou le cycle de vie d un feedback visuel.
     public void remove(Player player) {
         if (player != null) {
             remove(player.getUniqueId(), "player removal");
         }
     }
 
+    // Annotation YumariaJobs: Gere l affichage ou le cycle de vie d un feedback visuel.
     public void remove(UUID uuid) {
         remove(uuid, "hide timer");
     }
 
+    // Annotation YumariaJobs: Gere l affichage ou le cycle de vie d un feedback visuel.
     public void remove(UUID uuid, String reason) {
         if (!Bukkit.isPrimaryThread()) {
             Bukkit.getScheduler().runTask(plugin, () -> remove(uuid, reason));
@@ -94,6 +102,7 @@ public final class BossBarManager {
                 + ", reason=" + reason);
     }
 
+    // Annotation YumariaJobs: Gere l affichage ou le cycle de vie d un feedback visuel.
     public void removeAll() {
         if (!Bukkit.isPrimaryThread()) {
             Bukkit.getScheduler().runTask(plugin, this::removeAll);
@@ -109,6 +118,7 @@ public final class BossBarManager {
         sessions.clear();
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private void refreshHideTask(UUID uuid, BossBarSession session) {
         if (session.hideTask != null) {
             session.hideTask.cancel();
@@ -120,6 +130,7 @@ public final class BossBarManager {
                 + ", seconds=" + durationSeconds);
     }
 
+    // Annotation YumariaJobs: Formate ou normalise du texte pour affichage, commandes ou recherche.
     private BarColor color() {
         String configured = plugin.getConfig().getString("progress-bar.color", "PURPLE");
         try {
@@ -130,6 +141,7 @@ public final class BossBarManager {
         }
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private BarStyle style() {
         String configured = plugin.getConfig().getString("progress-bar.style", "SEGMENTED_20");
         try {
@@ -140,6 +152,7 @@ public final class BossBarManager {
         }
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private BarStyle fallbackStyle() {
         try {
             return BarStyle.valueOf("SEGMENTED_20");
@@ -149,6 +162,7 @@ public final class BossBarManager {
         }
     }
 
+    // Annotation YumariaJobs: Repere methode: logique locale de cette classe.
     private void warnOnce(String key, String message) {
         if (warnedValues.add(key)) {
             plugin.getLogger().warning(message);
@@ -160,6 +174,7 @@ public final class BossBarManager {
         private final BossBar bossBar;
         private BukkitTask hideTask;
 
+        // Annotation YumariaJobs: Gere l affichage ou le cycle de vie d un feedback visuel.
         private BossBarSession(String jobId, BossBar bossBar) {
             this.jobId = jobId;
             this.bossBar = bossBar;
